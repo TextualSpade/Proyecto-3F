@@ -2,6 +2,7 @@
 #include <vector>
 #include <memory>
 #include <optional>
+#include "Jugador.hpp"
 
 class Lagrima {
 private:
@@ -35,41 +36,6 @@ public:
 
     void dibujar(sf::RenderWindow& ventana) { ventana.draw(forma); }
     bool estaDestruida() const { return destruida; }
-};
-
-class Jugador {
-private:
-    sf::Vector2f posicion;
-    float velocidad;
-    float radio;
-    sf::CircleShape forma;
-
-public:
-    Jugador(float x, float y) {
-        posicion = {x, y};
-        velocidad = 300.0f;
-        radio = 20.0f;
-        forma.setRadius(radio);
-        forma.setFillColor(sf::Color::Red);
-        forma.setOrigin({radio, radio});
-    }
-
-    void actualizar(float dt) {
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) posicion.y -= velocidad * dt;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) posicion.y += velocidad * dt;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) posicion.x -= velocidad * dt;
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) posicion.x += velocidad * dt;
-
-        if (posicion.x < 40.0f)  posicion.x = 40.0f;
-        if (posicion.x > 760.0f) posicion.x = 760.0f;
-        if (posicion.y < 40.0f)  posicion.y = 40.0f;
-        if (posicion.y > 560.0f) posicion.y = 560.0f;
-
-        forma.setPosition(posicion);
-    }
-
-    void dibujar(sf::RenderWindow& ventana) { ventana.draw(forma); }
-    sf::Vector2f getPosicion() const { return posicion; }
 };
 
 class Juego {
