@@ -3,40 +3,7 @@
 #include <memory>
 #include <optional>
 #include "Jugador.hpp"
-
-class Lagrima {
-private:
-    sf::Vector2f posicion;
-    sf::Vector2f direccion;
-    float velocidad;
-    float radio;
-    sf::CircleShape forma;
-    bool destruida;
-
-public:
-    Lagrima(sf::Vector2f posInicial, sf::Vector2f dir) {
-        posicion = posInicial;
-        direccion = dir;
-        velocidad = 500.0f;
-        radio = 6.0f;
-        destruida = false;
-        forma.setRadius(radio);
-        forma.setFillColor(sf::Color::Cyan);
-        forma.setOrigin({radio, radio});
-        forma.setPosition(posicion);
-    }
-
-    void actualizar(float dt) {
-        posicion += direccion * velocidad * dt;
-        forma.setPosition(posicion);
-        if (posicion.x < 0 || posicion.x > 800 || posicion.y < 0 || posicion.y > 600) {
-            destruida = true;
-        }
-    }
-
-    void dibujar(sf::RenderWindow& ventana) { ventana.draw(forma); }
-    bool estaDestruida() const { return destruida; }
-};
+#include "Lagrima.hpp"
 
 class Juego {
 private:
