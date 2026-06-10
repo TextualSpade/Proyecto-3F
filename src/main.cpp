@@ -4,12 +4,15 @@
 #include <optional>
 #include "Jugador.hpp"
 #include "Lagrima.hpp"
+#include "Enemigo.hpp"
+#include "Blob.hpp"
 
 class Juego {
 private:
     sf::RenderWindow ventana;
     std::unique_ptr<Jugador> isaac;
     std::vector<Lagrima> lagrimas;
+    std::vector<std::unique_ptr<Enemigo>> enemigos;  
     sf::Clock reloj;
     sf::Clock relojDisparo;
     float tiempoEntreDisparos;
@@ -39,6 +42,13 @@ private:
     void actualizar(float dt) {
         isaac->actualizar(dt);
         manejarDisparos();
+
+        
+        for (auto& enemigo : enemigos) {
+            enemigo->setObjetivo(isaac->getPosicion());
+            enemigo->actualizar(dt);
+        }
+
         for (size_t i = 0; i < lagrimas.size(); ) {
             lagrimas[i].actualizar(dt);
             if (lagrimas[i].estaDestruida()) lagrimas.erase(lagrimas.begin() + i);
@@ -55,6 +65,7 @@ private:
         paredes.setOutlineColor(sf::Color(70, 70, 70));
         ventana.draw(paredes);
         isaac->dibujar(ventana);
+        for (auto& enemigo : enemigos) enemigo->dibujar(ventana); 
         for (auto& lagrima : lagrimas) lagrima.dibujar(ventana);
         ventana.display();
     }
@@ -64,6 +75,7 @@ public:
         ventana.setFramerateLimit(60);
         isaac = std::make_unique<Jugador>(400.0f, 300.0f);
         tiempoEntreDisparos = 0.3f;
+        enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));   
     }
 
     void ejecutar() {
@@ -81,4 +93,3 @@ int main() {
     miJuego.ejecutar();
     return 0;
 }
-//codigo de pruebaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
