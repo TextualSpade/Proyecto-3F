@@ -1,5 +1,5 @@
 class Usuario
-Usuario --|> Personaje
+Usuario o-- Personaje
 
 class Personaje {
   +Morir()
@@ -14,23 +14,7 @@ Enemigo *-- Vida
 
 class Ataque 
 
-class Objeto
-class ZapatillasGato
-class CorazonPetalos
-class TrebolRuinas
-class FlechaCaza
-class PiedraPulir
-class PlumaViento
-class BolsaMonedas
-
-ZapatillasGato --|> Objeto
-CorazonPetalos --|> Objeto
-TrebolRuinas --|> Objeto
-FlechaCaza --|> Objeto
-PiedraPulir --|> Objeto
-
-
 Class Arma 
-
+Personaje o-- Arma 
 
 class Defensa
