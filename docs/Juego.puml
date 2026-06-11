@@ -1,5 +1,5 @@
 class Usuario
-Usuario --|> Personaje
+Usuario o-- Personaje
 
 
 class Personaje {
@@ -7,22 +7,34 @@ class Personaje {
   +Dañar()
   +RecibirDaño()
 }
-
 Personaje *-- Vida 
 Personaje o-- Objeto
 Personaje o-- Arma
-
+class Oso
+class Gato
+class Perro
+class Conejo
 Oso --|> Personaje
 Gato --|> Personaje
 Perro --|> Personaje
 Conejo --|> Personaje
 
 
-Class Enemigo
+class Enemigo
+class Fantasma
+class Iguana
+class Hongo
+class Boss
+Fantasma --|> Enemigo
+Iguana --|> Enemigo
+Hongo --|> Enemigo
+Boss --|> Enemigo
 Enemigo *-- Vida
 
 
 class Ataque 
+class Lagrimas
+Lagrimas --|> Ataque
 
 
 class Objeto
@@ -33,7 +45,6 @@ class FlechaCaza
 class PiedraPulir
 class PlumaViento
 class BolsaMonedas
-
 ZapatillasGato --|> Objeto
 CorazonPetalos --|> Objeto
 TrebolRuinas --|> Objeto
@@ -41,10 +52,3 @@ FlechaCaza --|> Objeto
 PiedraPulir --|> Objeto
 PlumaViento --|> Objeto
 BolsaMonedas --|> Objeto
-
-
-Class Arma 
-
-
-class Defensa
-
