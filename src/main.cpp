@@ -59,6 +59,25 @@ private:
                 }
             }
         }
+         for (auto& enemigo : enemigos) {
+            if (!enemigo->estaMuerto() &&
+                colisionan(enemigo->getPosicion(), enemigo->getRadio(),
+                           isaac->getPosicion(), isaac->getRadio())) {
+                isaac->recibirDanio(1);
+            }
+        }
+    }
+    void dibujarHUD() {
+        for (int i = 0; i < isaac->getVidaMaxima(); i++) {
+            sf::RectangleShape corazon({22.0f, 22.0f});
+            corazon.setPosition({50.0f + i * 30.0f, 8.0f});
+            if (i < isaac->getVida()) {
+                corazon.setFillColor(sf::Color(220, 40, 40));   
+            } else {
+                corazon.setFillColor(sf::Color(80, 80, 80));    
+            }
+            ventana.draw(corazon);
+        }
     }
 
     void actualizar(float dt) {
@@ -78,11 +97,11 @@ private:
 
         manejarColisiones();
 
-        // Sacar de la lista a los enemigos que murieron
         for (size_t i = 0; i < enemigos.size(); ) {
             if (enemigos[i]->estaMuerto()) enemigos.erase(enemigos.begin() + i);
             else i++;
         }
+
     }
 
     void renderizar() {
@@ -96,6 +115,7 @@ private:
         isaac->dibujar(ventana);
         for (auto& enemigo : enemigos) enemigo->dibujar(ventana);
         for (auto& lagrima : lagrimas) lagrima.dibujar(ventana);
+        dibujarHUD();
         ventana.display();
     }
 
