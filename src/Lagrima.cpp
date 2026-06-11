@@ -31,3 +31,5 @@ void Lagrima::dibujar(sf::RenderWindow& ventana) {
 void Lagrima::destruir() { destruida = true; }
 
 bool Lagrima::estaDestruida() const { return destruida; }
+sf::Vector2f Lagrima::getPosicion() const { return posicion; }
+float Lagrima::getRadio() const { return radio; }
