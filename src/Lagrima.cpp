@@ -1,19 +1,20 @@
 #include "Lagrima.hpp"
 
-Lagrima::Lagrima(sf::Vector2f posInicial, sf::Vector2f dir) {
+Lagrima::Lagrima(sf::Vector2f posInicial, sf::Vector2f dir,
+                 float vel, sf::Color color) {
     posicion = posInicial;
     direccion = dir;
-    velocidad = 500.0f;
+    velocidad = vel;
     radio = 6.0f;
     destruida = false;
     forma.setRadius(radio);
-    forma.setFillColor(sf::Color::Cyan);
-    forma.setOrigin({radio, radio});   // centro del circulo como punto de referencia
+    forma.setFillColor(color);
+    forma.setOrigin({radio, radio});
     forma.setPosition(posicion);
 }
 
 void Lagrima::actualizar(float dt) {
-    // posicion = posicion + direccion * velocidad * tiempo (mov. rectilineo)
+    // posicion = posicion + direccion * velocidad * tiempo
     posicion += direccion * velocidad * dt;
     forma.setPosition(posicion);
 
@@ -31,5 +32,6 @@ void Lagrima::dibujar(sf::RenderWindow& ventana) {
 void Lagrima::destruir() { destruida = true; }
 
 bool Lagrima::estaDestruida() const { return destruida; }
+
 sf::Vector2f Lagrima::getPosicion() const { return posicion; }
 float Lagrima::getRadio() const { return radio; }

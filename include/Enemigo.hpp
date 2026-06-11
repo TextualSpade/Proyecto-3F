@@ -1,15 +1,14 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 
-
 class Enemigo {
-protected:                      // visible para las clases hijas
+protected:
     sf::Vector2f posicion;
-    sf::Vector2f objetivo;      // posicion de Isaac (se la pasa el Juego)
+    sf::Vector2f objetivo;
     float velocidad;
     float radio;
     int vida;
-    int resistencia;            // danio que absorbe en cada golpe
+    int resistencia;
     sf::CircleShape forma;
 
 public:
@@ -17,8 +16,10 @@ public:
             int vidaInicial, int resist, sf::Color color);
     virtual ~Enemigo() = default;
 
-    virtual void actualizar(float dt) = 0;   // virtual PURO -> clase abstracta
+    virtual void actualizar(float dt) = 0;
     virtual void dibujar(sf::RenderWindow& ventana);
+
+    virtual bool intentaDisparar(sf::Vector2f& dirSalida) { return false; }
 
     void setObjetivo(sf::Vector2f posJugador);
     void recibirDanio(int cantidad);

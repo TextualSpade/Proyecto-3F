@@ -2,16 +2,20 @@
 #include <vector>
 #include <memory>
 #include <optional>
+#include <cstdlib>
+#include <ctime>
 #include "Jugador.hpp"
 #include "Lagrima.hpp"
 #include "Enemigo.hpp"
 #include "Blob.hpp"
+#include "Raptor.hpp"
 
 class Juego {
 private:
     sf::RenderWindow ventana;
     std::unique_ptr<Jugador> isaac;
     std::vector<Lagrima> lagrimas;
+    std::vector<Lagrima> lagrimasEnemigas;
     std::vector<std::unique_ptr<Enemigo>> enemigos;
     sf::Clock reloj;
     sf::Clock relojDisparo;
@@ -39,7 +43,17 @@ private:
         }
     }
 
-    // Dos circulos chocan si la distancia entre centros < suma de radios
+    void manejarDisparosEnemigos() {
+        for (auto& enemigo : enemigos) {
+            sf::Vector2f dirSalida;
+            if (enemigo->intentaDisparar(dirSalida)) {
+                lagrimasEnemigas.push_back(
+                    Lagrima(enemigo->getPosicion(), dirSalida,
+                            250.0f, sf::Color(255, 140, 0)));
+            }
+        }
+    }
+
     bool colisionan(sf::Vector2f posA, float radioA, sf::Vector2f posB, float radioB) {
         float dx = posA.x - posB.x;
         float dy = posA.y - posB.y;
@@ -47,7 +61,6 @@ private:
         return (dx * dx + dy * dy) < (sumaRadios * sumaRadios);
     }
 
-    // Revisa cada lagrima contra cada enemigo
     void manejarColisiones() {
         for (auto& lagrima : lagrimas) {
             for (auto& enemigo : enemigos) {
@@ -60,7 +73,6 @@ private:
             }
         }
 
-        // Enemigos contra Isaac (danio por contacto)
         for (auto& enemigo : enemigos) {
             if (!enemigo->estaMuerto() &&
                 colisionan(enemigo->getPosicion(), enemigo->getRadio(),
@@ -68,9 +80,17 @@ private:
                 isaac->recibirDanio(1);
             }
         }
+
+        for (auto& lagrima : lagrimasEnemigas) {
+            if (!lagrima.estaDestruida() &&
+                colisionan(lagrima.getPosicion(), lagrima.getRadio(),
+                           isaac->getPosicion(), isaac->getRadio())) {
+                isaac->recibirDanio(1);
+                lagrima.destruir();
+            }
+        }
     }
 
-    // Corazones de vida: cuadros rojos (vida actual) y grises (vida perdida)
     void dibujarHUD() {
         for (int i = 0; i < isaac->getVidaMaxima(); i++) {
             sf::RectangleShape corazon({22.0f, 22.0f});
@@ -84,12 +104,13 @@ private:
         }
     }
 
-    // Cuando Isaac muere: todo vuelve a empezar
     void reiniciarPartida() {
         lagrimas.clear();
+        lagrimasEnemigas.clear();
         enemigos.clear();
         isaac->reiniciar(400.0f, 300.0f);
         enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
     }
 
     void actualizar(float dt) {
@@ -101,15 +122,22 @@ private:
             enemigo->actualizar(dt);
         }
 
+        manejarDisparosEnemigos();
+
         for (size_t i = 0; i < lagrimas.size(); ) {
             lagrimas[i].actualizar(dt);
             if (lagrimas[i].estaDestruida()) lagrimas.erase(lagrimas.begin() + i);
             else i++;
         }
 
+        for (size_t i = 0; i < lagrimasEnemigas.size(); ) {
+            lagrimasEnemigas[i].actualizar(dt);
+            if (lagrimasEnemigas[i].estaDestruida()) lagrimasEnemigas.erase(lagrimasEnemigas.begin() + i);
+            else i++;
+        }
+
         manejarColisiones();
 
-        // Sacar de la lista a los enemigos que murieron
         for (size_t i = 0; i < enemigos.size(); ) {
             if (enemigos[i]->estaMuerto()) enemigos.erase(enemigos.begin() + i);
             else i++;
@@ -129,6 +157,7 @@ private:
         isaac->dibujar(ventana);
         for (auto& enemigo : enemigos) enemigo->dibujar(ventana);
         for (auto& lagrima : lagrimas) lagrima.dibujar(ventana);
+        for (auto& lagrima : lagrimasEnemigas) lagrima.dibujar(ventana);
         dibujarHUD();
         ventana.display();
     }
@@ -136,9 +165,11 @@ private:
 public:
     Juego() : ventana(sf::VideoMode({800, 600}), "The Binding of Isaac - Alpha SFML 3") {
         ventana.setFramerateLimit(60);
+        std::srand(static_cast<unsigned>(std::time(nullptr)));
         isaac = std::make_unique<Jugador>(400.0f, 300.0f);
         tiempoEntreDisparos = 0.3f;
         enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
     }
 
     void ejecutar() {

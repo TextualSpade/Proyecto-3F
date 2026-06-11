@@ -11,13 +11,17 @@ private:
     bool destruida;           // bandera: "ya no sirvo, eliminenme"
 
 public:
-    Lagrima(sf::Vector2f posInicial, sf::Vector2f dir);
+    // velocidad y color tienen valores por defecto: si no se indican,
+    // se crea la lagrima clasica del jugador (rapida y cyan)
+    Lagrima(sf::Vector2f posInicial, sf::Vector2f dir,
+            float vel = 500.0f, sf::Color color = sf::Color::Cyan);
 
     void actualizar(float dt);
     void dibujar(sf::RenderWindow& ventana);
 
     void destruir();
     bool estaDestruida() const;
+
     sf::Vector2f getPosicion() const;
     float getRadio() const;
 };
