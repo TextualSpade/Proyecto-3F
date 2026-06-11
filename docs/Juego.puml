@@ -1,0 +1,18 @@
+class Usuario
+Usuario --|> Personaje
+
+class Personaje {
+  +Morir()
+  +Dañar()
+  +RecibirDaño()
+}
+Personaje *-- Vida 
+Personaje 
+
+Class Enemigo
+Enemigo *-- Vida
+
+class Ataque 
+Class Arma 
+
+class Defensa
