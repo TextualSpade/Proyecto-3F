@@ -12,7 +12,7 @@ private:
     sf::RenderWindow ventana;
     std::unique_ptr<Jugador> isaac;
     std::vector<Lagrima> lagrimas;
-    std::vector<std::unique_ptr<Enemigo>> enemigos;  
+    std::vector<std::unique_ptr<Enemigo>> enemigos;
     sf::Clock reloj;
     sf::Clock relojDisparo;
     float tiempoEntreDisparos;
@@ -39,11 +39,32 @@ private:
         }
     }
 
+    // Dos circulos chocan si la distancia entre centros < suma de radios
+    bool colisionan(sf::Vector2f posA, float radioA, sf::Vector2f posB, float radioB) {
+        float dx = posA.x - posB.x;
+        float dy = posA.y - posB.y;
+        float sumaRadios = radioA + radioB;
+        return (dx * dx + dy * dy) < (sumaRadios * sumaRadios);
+    }
+
+    // Revisa cada lagrima contra cada enemigo
+    void manejarColisiones() {
+        for (auto& lagrima : lagrimas) {
+            for (auto& enemigo : enemigos) {
+                if (!lagrima.estaDestruida() && !enemigo->estaMuerto() &&
+                    colisionan(lagrima.getPosicion(), lagrima.getRadio(),
+                               enemigo->getPosicion(), enemigo->getRadio())) {
+                    enemigo->recibirDanio(1);
+                    lagrima.destruir();
+                }
+            }
+        }
+    }
+
     void actualizar(float dt) {
         isaac->actualizar(dt);
         manejarDisparos();
 
-        
         for (auto& enemigo : enemigos) {
             enemigo->setObjetivo(isaac->getPosicion());
             enemigo->actualizar(dt);
@@ -52,6 +73,14 @@ private:
         for (size_t i = 0; i < lagrimas.size(); ) {
             lagrimas[i].actualizar(dt);
             if (lagrimas[i].estaDestruida()) lagrimas.erase(lagrimas.begin() + i);
+            else i++;
+        }
+
+        manejarColisiones();
+
+        // Sacar de la lista a los enemigos que murieron
+        for (size_t i = 0; i < enemigos.size(); ) {
+            if (enemigos[i]->estaMuerto()) enemigos.erase(enemigos.begin() + i);
             else i++;
         }
     }
@@ -65,7 +94,7 @@ private:
         paredes.setOutlineColor(sf::Color(70, 70, 70));
         ventana.draw(paredes);
         isaac->dibujar(ventana);
-        for (auto& enemigo : enemigos) enemigo->dibujar(ventana); 
+        for (auto& enemigo : enemigos) enemigo->dibujar(ventana);
         for (auto& lagrima : lagrimas) lagrima.dibujar(ventana);
         ventana.display();
     }
@@ -75,7 +104,7 @@ public:
         ventana.setFramerateLimit(60);
         isaac = std::make_unique<Jugador>(400.0f, 300.0f);
         tiempoEntreDisparos = 0.3f;
-        enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));   
+        enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
     }
 
     void ejecutar() {

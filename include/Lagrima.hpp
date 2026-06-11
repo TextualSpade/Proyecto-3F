@@ -18,4 +18,6 @@ public:
 
     void destruir();
     bool estaDestruida() const;
+    sf::Vector2f getPosicion() const;
+    float getRadio() const;
 };
