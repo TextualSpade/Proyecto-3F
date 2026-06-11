@@ -1,5 +1,5 @@
 class Usuario
-Usuario --|> Personaje
+Usuario o-- Personaje
 
 class Personaje {
   +Morir()
@@ -13,6 +13,8 @@ Class Enemigo
 Enemigo *-- Vida
 
 class Ataque 
+
 Class Arma 
+Personaje o-- Arma 
 
 class Defensa
