@@ -49,6 +49,13 @@ void Jugador::recibirDanio(int cantidad) {
     tiempoInvulnerable = 1.0f;      // 1 segundo inmune tras cada golpe
 }
 
+void Jugador::reiniciar(float x, float y) {
+    posicion = {x, y};
+    forma.setPosition(posicion);
+    vida = vidaMaxima;
+    tiempoInvulnerable = 0.0f;
+}
+
 bool Jugador::estaVivo() const { return vida > 0; }
 bool Jugador::esInvulnerable() const { return tiempoInvulnerable > 0.0f; }
 

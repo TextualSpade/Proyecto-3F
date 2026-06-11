@@ -59,7 +59,9 @@ private:
                 }
             }
         }
-         for (auto& enemigo : enemigos) {
+
+        // Enemigos contra Isaac (danio por contacto)
+        for (auto& enemigo : enemigos) {
             if (!enemigo->estaMuerto() &&
                 colisionan(enemigo->getPosicion(), enemigo->getRadio(),
                            isaac->getPosicion(), isaac->getRadio())) {
@@ -67,17 +69,27 @@ private:
             }
         }
     }
+
+    // Corazones de vida: cuadros rojos (vida actual) y grises (vida perdida)
     void dibujarHUD() {
         for (int i = 0; i < isaac->getVidaMaxima(); i++) {
             sf::RectangleShape corazon({22.0f, 22.0f});
             corazon.setPosition({50.0f + i * 30.0f, 8.0f});
             if (i < isaac->getVida()) {
-                corazon.setFillColor(sf::Color(220, 40, 40));   
+                corazon.setFillColor(sf::Color(220, 40, 40));
             } else {
-                corazon.setFillColor(sf::Color(80, 80, 80));    
+                corazon.setFillColor(sf::Color(80, 80, 80));
             }
             ventana.draw(corazon);
         }
+    }
+
+    // Cuando Isaac muere: todo vuelve a empezar
+    void reiniciarPartida() {
+        lagrimas.clear();
+        enemigos.clear();
+        isaac->reiniciar(400.0f, 300.0f);
+        enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
     }
 
     void actualizar(float dt) {
@@ -97,11 +109,13 @@ private:
 
         manejarColisiones();
 
+        // Sacar de la lista a los enemigos que murieron
         for (size_t i = 0; i < enemigos.size(); ) {
             if (enemigos[i]->estaMuerto()) enemigos.erase(enemigos.begin() + i);
             else i++;
         }
 
+        if (!isaac->estaVivo()) reiniciarPartida();
     }
 
     void renderizar() {

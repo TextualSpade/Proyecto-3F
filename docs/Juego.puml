@@ -1,20 +1,50 @@
 class Usuario
-Usuario o-- Personaje
+Usuario --|> Personaje
+
 
 class Personaje {
   +Morir()
   +Dañar()
   +RecibirDaño()
 }
+
 Personaje *-- Vida 
-Personaje 
+Personaje o-- Objeto
+Personaje o-- Arma
+
+Oso --|> Personaje
+Gato --|> Personaje
+Perro --|> Personaje
+Conejo --|> Personaje
+
 
 Class Enemigo
 Enemigo *-- Vida
 
+
 class Ataque 
 
+
+class Objeto
+class ZapatillasGato
+class CorazonPetalos
+class TrebolRuinas
+class FlechaCaza
+class PiedraPulir
+class PlumaViento
+class BolsaMonedas
+
+ZapatillasGato --|> Objeto
+CorazonPetalos --|> Objeto
+TrebolRuinas --|> Objeto
+FlechaCaza --|> Objeto
+PiedraPulir --|> Objeto
+PlumaViento --|> Objeto
+BolsaMonedas --|> Objeto
+
+
 Class Arma 
-Personaje o-- Arma 
+
 
 class Defensa
+

@@ -18,6 +18,7 @@ public:
     void dibujar(sf::RenderWindow& ventana);
 
     void recibirDanio(int cantidad);
+    void reiniciar(float x, float y);
     bool estaVivo() const;
     bool esInvulnerable() const;
 
