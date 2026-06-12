@@ -9,6 +9,7 @@
 #include "Enemigo.hpp"
 #include "Blob.hpp"
 #include "Raptor.hpp"
+#include "Rusher.hpp"
 
 class Juego {
 private:
@@ -111,6 +112,7 @@ private:
         isaac->reiniciar(400.0f, 300.0f);
         enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
         enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
     }
 
     void actualizar(float dt) {
@@ -170,6 +172,7 @@ public:
         tiempoEntreDisparos = 0.3f;
         enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
         enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
     }
 
     void ejecutar() {
