@@ -4,17 +4,16 @@
 class Lagrima {
 private:
     sf::Vector2f posicion;
-    sf::Vector2f direccion;   // hacia donde vuela (fija desde que nace)
+    sf::Vector2f direccion;
     float velocidad;
     float radio;
     sf::CircleShape forma;
-    bool destruida;           // bandera: "ya no sirvo, eliminenme"
+    bool destruida;
 
 public:
-    // velocidad y color tienen valores por defecto: si no se indican,
-    // se crea la lagrima clasica del jugador (rapida y cyan)
     Lagrima(sf::Vector2f posInicial, sf::Vector2f dir,
-            float vel = 500.0f, sf::Color color = sf::Color::Cyan);
+            float vel = 500.0f, sf::Color color = sf::Color::Cyan,
+            float rad = 6.0f);
 
     void actualizar(float dt);
     void dibujar(sf::RenderWindow& ventana);

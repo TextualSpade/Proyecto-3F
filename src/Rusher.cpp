@@ -5,7 +5,7 @@ Rusher::Rusher(float x, float y)
     : Enemigo({x, y}, 60.0f, 18.0f, 4, 0, sf::Color(80, 170, 90)) {
     estado = Estado::Apuntando;
     dirEmbestida = {0.0f, 0.0f};
-    velocidadEmbestida = 450.0f;
+    velocidadEmbestida = 360.0f;
     cronometro = 0.0f;
     tiempoApuntando = 1.2f;
     tiempoAturdido = 0.8f;

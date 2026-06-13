@@ -21,6 +21,10 @@ public:
 
     virtual bool intentaDisparar(sf::Vector2f& dirSalida) { return false; }
 
+    virtual float radioProyectil() const { return 6.0f; }
+    virtual float velocidadProyectil() const { return 250.0f; }
+    virtual sf::Color colorProyectil() const { return sf::Color(255, 140, 0); }
+
     void setObjetivo(sf::Vector2f posJugador);
     void recibirDanio(int cantidad);
     bool estaMuerto() const;

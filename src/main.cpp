@@ -10,6 +10,7 @@
 #include "Blob.hpp"
 #include "Raptor.hpp"
 #include "Rusher.hpp"
+#include "Spreadshot.hpp"
 
 class Juego {
 private:
@@ -50,7 +51,9 @@ private:
             if (enemigo->intentaDisparar(dirSalida)) {
                 lagrimasEnemigas.push_back(
                     Lagrima(enemigo->getPosicion(), dirSalida,
-                            250.0f, sf::Color(255, 140, 0)));
+                            enemigo->velocidadProyectil(),
+                            enemigo->colorProyectil(),
+                            enemigo->radioProyectil()));
             }
         }
     }
@@ -113,6 +116,7 @@ private:
         enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
         enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
         enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
+        enemigos.push_back(std::make_unique<Spreadshot>(150.0f, 450.0f));
     }
 
     void actualizar(float dt) {
@@ -173,6 +177,7 @@ public:
         enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
         enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
         enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
+        enemigos.push_back(std::make_unique<Spreadshot>(150.0f, 450.0f));
     }
 
     void ejecutar() {
