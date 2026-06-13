@@ -8,9 +8,8 @@ class Personaje {
   +RecibirDaño()
 }
 Personaje *-- Vida 
-Personaje o-- Objeto
-Personaje o-- Arma
-class Oso
+Personaje "1" o-- "1"Objeto
+class Oso 
 class Gato
 class Perro
 class Conejo
@@ -18,6 +17,13 @@ Oso --|> Personaje
 Gato --|> Personaje
 Perro --|> Personaje
 Conejo --|> Personaje
+Personaje "1" o-- "1" ZapatillasGato
+Personaje "1" o-- "1" CorazonPetalos
+Personaje "1" o-- "1" TrebolRuinas
+Personaje "1" o-- "1" FlechaCaza
+Personaje "1" o-- "1" PiedraPulir
+Personaje "1" o-- "1" PlumaViento
+Personaje "1" o-- "1" BolsaMonedas
 
 
 class Enemigo
@@ -52,3 +58,18 @@ FlechaCaza --|> Objeto
 PiedraPulir --|> Objeto
 PlumaViento --|> Objeto
 BolsaMonedas --|> Objeto
+
+
+Class Ataque
+Ataque --|> Lagrimas
+Personaje o-- Ataque
+
+
+class Combate {
+  +Dañar(Personaje, Enemigo)
+  +RecibirDaño(Personaje, Enemigo)
+}
+Personaje o-- Combate
+Enemigo o-- Combate
+
+
