@@ -10,6 +10,9 @@ static constexpr float VEL_SLASH   = 0.05f;
 static constexpr float VEL_HURT    = 0.06f;
 static constexpr float VEL_DYING   = 0.07f;
 
+static constexpr float MARGEN_X = FW * ESCALA / 2.0f;
+static constexpr float MARGEN_Y = FH * ESCALA / 2.0f;
+
 Jugador::Jugador(float x, float y,
                  const std::string& sheet1,
                  const std::string& sheet2,
@@ -159,10 +162,10 @@ void Jugador::actualizar(float dt) {
         posicion += movimiento * velocidad * dt;
     }
 
-    if (posicion.x < 40.0f + radio)  posicion.x = 40.0f + radio;
-    if (posicion.x > 760.0f - radio) posicion.x = 760.0f - radio;
-    if (posicion.y < 40.0f + radio)  posicion.y = 40.0f + radio;
-    if (posicion.y > 560.0f - radio) posicion.y = 560.0f - radio;
+    if (posicion.x < 40.0f + MARGEN_X) posicion.x = 40.0f + MARGEN_X;
+    if (posicion.x > 760.0f - MARGEN_X) posicion.x = 760.0f - MARGEN_X;
+    if (posicion.y < 40.0f + MARGEN_Y) posicion.y = 40.0f + MARGEN_Y;
+    if (posicion.y > 560.0f - MARGEN_Y) posicion.y = 560.0f - MARGEN_Y;
 
     if (tiempoInvulnerable > 0.0f) tiempoInvulnerable -= dt;
 

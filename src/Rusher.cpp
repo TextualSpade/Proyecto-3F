@@ -122,10 +122,10 @@ void Rusher::actualizar(float dt) {
         if (!animacion.termino()) animacion.actualizar(dt);
 
         bool choque = false;
-        if (posicion.x < 40.0f + radio)  { posicion.x = 40.0f + radio;  choque = true; }
-        if (posicion.x > 760.0f - radio) { posicion.x = 760.0f - radio; choque = true; }
-        if (posicion.y < 40.0f + radio)  { posicion.y = 40.0f + radio;  choque = true; }
-        if (posicion.y > 560.0f - radio) { posicion.y = 560.0f - radio; choque = true; }
+        if (posicion.x < 40.0f + FRAME_W / 2.0f) { posicion.x = 40.0f + FRAME_W / 2.0f; choque = true; }
+        if (posicion.x > 760.0f - FRAME_W / 2.0f) { posicion.x = 760.0f - FRAME_W / 2.0f; choque = true; }
+        if (posicion.y < 40.0f + FRAME_H / 2.0f) { posicion.y = 40.0f + FRAME_H / 2.0f; choque = true; }
+        if (posicion.y > 560.0f - FRAME_H / 2.0f) { posicion.y = 560.0f - FRAME_H / 2.0f; choque = true; }
 
         if (choque) cambiarEstado(Estado::Aturdido);
 

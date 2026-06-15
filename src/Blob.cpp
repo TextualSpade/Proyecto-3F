@@ -89,10 +89,10 @@ void Blob::actualizar(float dt) {
         posicion += dir * velocidad * dt;
     }
 
-    if (posicion.x < 40.0f + radio)  posicion.x = 40.0f + radio;
-    if (posicion.x > 760.0f - radio) posicion.x = 760.0f - radio;
-    if (posicion.y < 40.0f + radio)  posicion.y = 40.0f + radio;
-    if (posicion.y > 560.0f - radio) posicion.y = 560.0f - radio;
+    if (posicion.x < 40.0f + FRAME_W / 2.0f) posicion.x = 40.0f + FRAME_W / 2.0f;
+    if (posicion.x > 760.0f - FRAME_W / 2.0f) posicion.x = 760.0f - FRAME_W / 2.0f;
+    if (posicion.y < 40.0f + FRAME_H / 2.0f) posicion.y = 40.0f + FRAME_H / 2.0f;
+    if (posicion.y > 560.0f - FRAME_H / 2.0f) posicion.y = 560.0f - FRAME_H / 2.0f;
 
     animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
     animacion.actualizar(dt);

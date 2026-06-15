@@ -100,10 +100,10 @@ void Raptor::actualizar(float dt) {
     posicion += dirMovimiento * velocidad * dt;
 
     bool rebote = false;
-    if (posicion.x < 40.0f + radio)  { posicion.x = 40.0f + radio;  rebote = true; }
-    if (posicion.x > 760.0f - radio) { posicion.x = 760.0f - radio; rebote = true; }
-    if (posicion.y < 40.0f + radio)  { posicion.y = 40.0f + radio;  rebote = true; }
-    if (posicion.y > 560.0f - radio) { posicion.y = 560.0f - radio; rebote = true; }
+    if (posicion.x < 40.0f + FRAME_W / 2.0f) { posicion.x = 40.0f + FRAME_W / 2.0f; rebote = true; }
+    if (posicion.x > 760.0f - FRAME_W / 2.0f) { posicion.x = 760.0f - FRAME_W / 2.0f; rebote = true; }
+    if (posicion.y < 40.0f + FRAME_H / 2.0f) { posicion.y = 40.0f + FRAME_H / 2.0f; rebote = true; }
+    if (posicion.y > 560.0f - FRAME_H / 2.0f) { posicion.y = 560.0f - FRAME_H / 2.0f; rebote = true; }
     if (rebote) {
         elegirDireccionAleatoria();
         cronometroDir = 0.0f;
