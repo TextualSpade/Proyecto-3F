@@ -1,5 +1,4 @@
 #include <SFML/Graphics.hpp>
-#include <cstdint>
 #include <SFML/Audio.hpp>
 #include <vector>
 #include <deque>
@@ -11,6 +10,7 @@
 #include <string>
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include "Jugador.hpp"
 #include "ProyectilJugador.hpp"
 #include "Lagrima.hpp"
@@ -99,6 +99,46 @@ private:
     bool hayTexturaMenuPrincipal;
     sf::Music musicaPortada;
     sf::Music musicaMenu;
+    sf::Music musicaFondo;
+    std::string pistaFondoActual;
+
+    sf::SoundBuffer bufferMenuSelect;
+    sf::SoundBuffer bufferPlayerShoot;
+    sf::SoundBuffer bufferPlayerHurt;
+    sf::SoundBuffer bufferPlayerDeath;
+    sf::SoundBuffer bufferDoorEnter;
+    sf::SoundBuffer bufferLockedDoor;
+    sf::SoundBuffer bufferSecretFound;
+    sf::SoundBuffer bufferPowerHeart;
+    sf::SoundBuffer bufferPowerLightning;
+    sf::SoundBuffer bufferPowerStar;
+    sf::SoundBuffer bufferPowerKey;
+    sf::SoundBuffer bufferBlobHurt;
+    sf::SoundBuffer bufferBlobDeath;
+    sf::SoundBuffer bufferRaptorShoot;
+    sf::SoundBuffer bufferRaptorHurt;
+    sf::SoundBuffer bufferRusherCharge;
+    sf::SoundBuffer bufferSpreadshotShoot;
+
+    bool hayMenuSelect;
+    bool hayPlayerShoot;
+    bool hayPlayerHurt;
+    bool hayPlayerDeath;
+    bool hayDoorEnter;
+    bool hayLockedDoor;
+    bool haySecretFound;
+    bool hayPowerHeart;
+    bool hayPowerLightning;
+    bool hayPowerStar;
+    bool hayPowerKey;
+    bool hayBlobHurt;
+    bool hayBlobDeath;
+    bool hayRaptorShoot;
+    bool hayRaptorHurt;
+    bool hayRusherCharge;
+    bool haySpreadshotShoot;
+
+    std::vector<sf::Sound> sonidosActivos;
     sf::Texture texturaCorazon;
     sf::Texture texturaLlave;
     sf::Texture texturaObjetoCorazon;
@@ -163,6 +203,88 @@ private:
         });
 
         ventana.draw(sprite);
+    }
+
+
+    void cargarSonidos() {
+        hayMenuSelect = bufferMenuSelect.loadFromFile("assets/sounds/menu_select.wav");
+        hayPlayerShoot = bufferPlayerShoot.loadFromFile("assets/sounds/player_shoot.wav");
+        hayPlayerHurt = bufferPlayerHurt.loadFromFile("assets/sounds/player_hurt.wav");
+        hayPlayerDeath = bufferPlayerDeath.loadFromFile("assets/sounds/player_death.wav");
+        hayDoorEnter = bufferDoorEnter.loadFromFile("assets/sounds/door_enter.wav");
+        hayLockedDoor = bufferLockedDoor.loadFromFile("assets/sounds/locked_door.wav");
+        haySecretFound = bufferSecretFound.loadFromFile("assets/sounds/secret_found.wav");
+        hayPowerHeart = bufferPowerHeart.loadFromFile("assets/sounds/power_heart.wav");
+        hayPowerLightning = bufferPowerLightning.loadFromFile("assets/sounds/power_lightning.wav");
+        hayPowerStar = bufferPowerStar.loadFromFile("assets/sounds/power_star.wav");
+        hayPowerKey = bufferPowerKey.loadFromFile("assets/sounds/power_key.wav");
+        hayBlobHurt = bufferBlobHurt.loadFromFile("assets/sounds/blob_hurt.wav");
+        hayBlobDeath = bufferBlobDeath.loadFromFile("assets/sounds/blob_death.wav");
+        hayRaptorShoot = bufferRaptorShoot.loadFromFile("assets/sounds/raptor_shoot.wav");
+        hayRaptorHurt = bufferRaptorHurt.loadFromFile("assets/sounds/raptor_hurt.wav");
+        hayRusherCharge = bufferRusherCharge.loadFromFile("assets/sounds/rusher_charge.wav");
+        haySpreadshotShoot = bufferSpreadshotShoot.loadFromFile("assets/sounds/spreadshot_shoot.wav");
+    }
+
+    void reproducirSonido(const sf::SoundBuffer& buffer, bool disponible, float volumen = 60.0f) {
+        if (!disponible) return;
+
+        if (sonidosActivos.size() > 28) {
+            sonidosActivos.erase(sonidosActivos.begin());
+        }
+
+        sonidosActivos.emplace_back(buffer);
+        sonidosActivos.back().setVolume(volumen);
+        sonidosActivos.back().play();
+    }
+
+    void actualizarMusicaFondoSala() {
+        std::string nuevaPista = (salaActual == SALA_I)
+            ? "assets/music/boss_theme.wav"
+            : "assets/music/game_theme.wav";
+
+        if (pistaFondoActual == nuevaPista) {
+            return;
+        }
+
+        musicaFondo.stop();
+        pistaFondoActual.clear();
+
+        if (musicaFondo.openFromFile(nuevaPista)) {
+            musicaFondo.setLooping(true);
+            musicaFondo.setVolume(salaActual == SALA_I ? 52.0f : 38.0f);
+            musicaFondo.play();
+            pistaFondoActual = nuevaPista;
+        }
+    }
+
+    void detenerMusicaFondo() {
+        musicaFondo.stop();
+        pistaFondoActual.clear();
+    }
+
+    void reproducirSonidoDanioEnemigo(Enemigo* enemigo) {
+        if (dynamic_cast<Blob*>(enemigo)) {
+            reproducirSonido(bufferBlobHurt, hayBlobHurt, 55.0f);
+        } else if (dynamic_cast<Raptor*>(enemigo)) {
+            reproducirSonido(bufferRaptorHurt, hayRaptorHurt, 55.0f);
+        } else if (dynamic_cast<Rusher*>(enemigo)) {
+            reproducirSonido(bufferRusherCharge, hayRusherCharge, 45.0f);
+        } else if (dynamic_cast<Spreadshot*>(enemigo)) {
+            reproducirSonido(bufferSpreadshotShoot, haySpreadshotShoot, 38.0f);
+        }
+    }
+
+    void reproducirSonidoMuerteEnemigo(Enemigo* enemigo) {
+        if (dynamic_cast<Blob*>(enemigo)) {
+            reproducirSonido(bufferBlobDeath, hayBlobDeath, 55.0f);
+        } else if (dynamic_cast<Raptor*>(enemigo)) {
+            reproducirSonido(bufferRaptorHurt, hayRaptorHurt, 50.0f);
+        } else if (dynamic_cast<Rusher*>(enemigo)) {
+            reproducirSonido(bufferRusherCharge, hayRusherCharge, 45.0f);
+        } else if (dynamic_cast<Spreadshot*>(enemigo)) {
+            reproducirSonido(bufferSpreadshotShoot, haySpreadshotShoot, 40.0f);
+        }
     }
 
     bool mostrarPortadaInicial() {
@@ -238,7 +360,7 @@ private:
 
         int opcion = 0;
         const int totalOpciones = 4;
-        const float posicionesY[4] = {205.0f, 330.0f, 455.0f, 610.0f};
+        const float posicionesY[4] = {159.0f, 261.0f, 363.0f, 486.0f};
 
         while (ventana.isOpen()) {
             while (const std::optional<sf::Event> evento = ventana.pollEvent()) {
@@ -251,15 +373,18 @@ private:
                     if (kp->code == sf::Keyboard::Key::Up ||
                         kp->code == sf::Keyboard::Key::W) {
                         opcion = (opcion + totalOpciones - 1) % totalOpciones;
+                        reproducirSonido(bufferMenuSelect, hayMenuSelect, 55.0f);
                     }
 
                     if (kp->code == sf::Keyboard::Key::Down ||
                         kp->code == sf::Keyboard::Key::S) {
                         opcion = (opcion + 1) % totalOpciones;
+                        reproducirSonido(bufferMenuSelect, hayMenuSelect, 55.0f);
                     }
 
                     if (kp->code == sf::Keyboard::Key::Enter ||
                         kp->code == sf::Keyboard::Key::Space) {
+                        reproducirSonido(bufferMenuSelect, hayMenuSelect, 65.0f);
                         if (opcion == 0) {
                             musicaMenu.stop();
                             return true;
@@ -298,8 +423,8 @@ private:
                 ventana.draw(fondo);
             }
 
-            sf::RectangleShape selector({250.0f, 62.0f});
-            selector.setOrigin({125.0f, 31.0f});
+            sf::RectangleShape selector({300.0f, 72.0f});
+            selector.setOrigin({150.0f, 36.0f});
             selector.setPosition({400.0f, posicionesY[opcion]});
             selector.setFillColor(sf::Color(255, 220, 80, 45));
             selector.setOutlineColor(sf::Color(255, 225, 90));
@@ -357,6 +482,7 @@ private:
                 if (const auto* kp = evento->getIf<sf::Event::KeyPressed>()) {
                     if (kp->code == sf::Keyboard::Key::Num1 ||
                         kp->code == sf::Keyboard::Key::Enter) {
+                        reproducirSonido(bufferMenuSelect, hayMenuSelect, 65.0f);
                         return 0;
                     }
                 }
@@ -492,6 +618,7 @@ private:
                 }
             }
 
+            reproducirSonido(bufferPlayerShoot, hayPlayerShoot, 42.0f);
             relojDisparo.restart();
         }
     }
@@ -503,9 +630,11 @@ private:
                 if (dynamic_cast<Raptor*>(enemigo.get())) {
                     proyectilesRaptor.push_back(
                         std::make_unique<ProyectilRaptor>(enemigo->getPosicion(), dirSalida));
+                    reproducirSonido(bufferRaptorShoot, hayRaptorShoot, 35.0f);
                 } else if (dynamic_cast<Spreadshot*>(enemigo.get())) {
                     proyectilesSpreadshot.push_back(
                         std::make_unique<ProyectilSpreadshot>(enemigo->getPosicion(), dirSalida));
+                    reproducirSonido(bufferSpreadshotShoot, haySpreadshotShoot, 35.0f);
                 } else {
                     lagrimasEnemigas.push_back(
                         Lagrima(enemigo->getPosicion(), dirSalida,
@@ -584,6 +713,7 @@ private:
         switch (tipo) {
             case TipoObjeto::Corazon:
                 isaac->sanar(1);
+                reproducirSonido(bufferPowerHeart, hayPowerHeart, 65.0f);
                 mostrarMensaje("Corazon +1", 1.8f);
                 break;
 
@@ -591,12 +721,14 @@ private:
                 stacksVelocidad++;
                 tiempoVelocidad += 30.0f;
                 isaac->setMultiplicadorVelocidad(1.0f + 0.5f * static_cast<float>(stacksVelocidad));
+                reproducirSonido(bufferPowerLightning, hayPowerLightning, 65.0f);
                 mostrarMensaje("Velocidad aumentada", 2.2f);
                 break;
 
             case TipoObjeto::Estrella:
                 stacksEstrella++;
                 tiempoEstrella += 15.0f;
+                reproducirSonido(bufferPowerStar, hayPowerStar, 65.0f);
                 mostrarMensaje("Disparo triple activado", 2.2f);
                 break;
         }
@@ -639,6 +771,7 @@ private:
                 if (!proy.estaDestruido() && !enemigo->estaMuerto() &&
                     colisionan(proy.getPosicion(), proy.getRadio(),
                                enemigo->getPosicion(), enemigo->getRadio())) {
+                    reproducirSonidoDanioEnemigo(enemigo.get());
                     enemigo->recibirDanio(1);
                     proy.destruir();
                 }
@@ -649,6 +782,9 @@ private:
             if (!enemigo->estaMuerto() &&
                 colisionan(enemigo->getPosicion(), enemigo->getRadio(),
                            isaac->getCentroHitbox(), isaac->getRadio())) {
+                if (!isaac->esInvulnerable()) {
+                    reproducirSonido(bufferPlayerHurt, hayPlayerHurt, 55.0f);
+                }
                 isaac->recibirDanio(1);
                 if (auto* blob = dynamic_cast<Blob*>(enemigo.get())) blob->tocarJugador();
                 if (auto* rusher = dynamic_cast<Rusher*>(enemigo.get())) rusher->golpearJugador();
@@ -659,6 +795,9 @@ private:
             if (!lagrima.estaDestruida() &&
                 colisionan(lagrima.getPosicion(), lagrima.getRadio(),
                            isaac->getCentroHitbox(), isaac->getRadio())) {
+                if (!isaac->esInvulnerable()) {
+                    reproducirSonido(bufferPlayerHurt, hayPlayerHurt, 55.0f);
+                }
                 isaac->recibirDanio(1);
                 lagrima.destruir();
             }
@@ -668,6 +807,9 @@ private:
             if (!proy->estaDestruido() &&
                 colisionan(proy->getPosicion(), proy->getRadio(),
                            isaac->getCentroHitbox(), isaac->getRadio())) {
+                if (!isaac->esInvulnerable()) {
+                    reproducirSonido(bufferPlayerHurt, hayPlayerHurt, 55.0f);
+                }
                 isaac->recibirDanio(1);
                 proy->golpear();
             }
@@ -677,6 +819,9 @@ private:
             if (!proy->estaDestruido() &&
                 colisionan(proy->getPosicion(), proy->getRadio(),
                            isaac->getCentroHitbox(), isaac->getRadio())) {
+                if (!isaac->esInvulnerable()) {
+                    reproducirSonido(bufferPlayerHurt, hayPlayerHurt, 55.0f);
+                }
                 isaac->recibirDanio(1);
                 proy->golpear();
             }
@@ -909,6 +1054,7 @@ private:
 
     bool puedeEntrarSala(int nuevaSala) {
         if (nuevaSala == SALA_I && !llaveObtenida) {
+            reproducirSonido(bufferLockedDoor, hayLockedDoor, 65.0f);
             mostrarMensaje("Necesitas una llave para entrar al jefe", 3.0f);
             return false;
         }
@@ -1334,6 +1480,7 @@ private:
 
         isaac->reiniciar(400.0f, 300.0f);
         cargarEnemigosSala();
+        actualizarMusicaFondoSala();
     }
 
     void actualizar(float dt) {
@@ -1390,6 +1537,7 @@ private:
             else if (auto* s  = dynamic_cast<Spreadshot*>(enemigos[i].get())) eliminar = s->listo_para_eliminar();
             else eliminar = enemigos[i]->estaMuerto();
             if (eliminar) {
+                reproducirSonidoMuerteEnemigo(enemigos[i].get());
                 intentarSoltarObjeto(enemigos[i].get());
                 enemigos.erase(enemigos.begin() + i);
             } else {
@@ -1403,6 +1551,7 @@ private:
             if (salaActual == SALA_E && !puertaSecretaDesbloqueada) {
                 puertaSecretaDesbloqueada = true;
                 salas[SALA_E].izquierda = SALA_SECRETA;
+                reproducirSonido(bufferSecretFound, haySecretFound, 70.0f);
                 mostrarMensaje("Busca una puerta invisible", 4.0f);
             }
 
@@ -1417,7 +1566,10 @@ private:
         actualizarObjetosSuelo();
         intentarCambioSala();
 
-        if (!isaac->estaVivo()) reiniciarPartida();
+        if (!isaac->estaVivo()) {
+            reproducirSonido(bufferPlayerDeath, hayPlayerDeath, 65.0f);
+            reiniciarPartida();
+        }
     }
 
     void renderizar() {
@@ -1466,6 +1618,24 @@ public:
         : ventana(sf::VideoMode({800, 600}), "Aventuras en el Edificio de Software"),
           hayTexturaPortada(false),
           hayTexturaMenuPrincipal(false),
+          pistaFondoActual(""),
+          hayMenuSelect(false),
+          hayPlayerShoot(false),
+          hayPlayerHurt(false),
+          hayPlayerDeath(false),
+          hayDoorEnter(false),
+          hayLockedDoor(false),
+          haySecretFound(false),
+          hayPowerHeart(false),
+          hayPowerLightning(false),
+          hayPowerStar(false),
+          hayPowerKey(false),
+          hayBlobHurt(false),
+          hayBlobDeath(false),
+          hayRaptorShoot(false),
+          hayRaptorHurt(false),
+          hayRusherCharge(false),
+          haySpreadshotShoot(false),
           hayTexturaCorazon(false),
           hayTexturaLlave(false),
           hayTexturaObjetoCorazon(false),
@@ -1485,6 +1655,7 @@ public:
           hayFuenteHUD(false) {
         ventana.setFramerateLimit(60);
         std::srand(static_cast<unsigned>(std::time(nullptr)));
+        cargarSonidos();
 
         hayFuenteHUD = fuenteHUD.openFromFile("assets/fonts/MedievalSharp.ttf");
         if (!hayFuenteHUD) {
@@ -1539,6 +1710,7 @@ public:
 
         salas[salaActual].visitada = true;
         cargarEnemigosSala();
+        actualizarMusicaFondoSala();
     }
 
     void ejecutar() {
