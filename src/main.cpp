@@ -59,6 +59,7 @@ struct DatosSala {
 
     bool visitada = false;
     bool limpiada = false;
+    bool visibleEnMapa = true;
 
     int mapaColumna = -1;
     int mapaFila = -1;
@@ -92,6 +93,30 @@ private:
     std::vector<DatosSala> salas;
     int salaActual;
     bool bloqueoCambioSala;
+    bool puertaSecretaDesbloqueada;
+    bool llaveDisponible;
+    bool llaveObtenida;
+    sf::Vector2f posicionLlave;
+    std::string mensajePantalla;
+    float tiempoMensaje;
+    sf::Font fuenteHUD;
+    bool hayFuenteHUD;
+
+    static constexpr int SALA_SECRETA = 0;
+    static constexpr int SALA_E = 1; // room_green
+    static constexpr int SALA_G = 2; // room_teal
+    static constexpr int SALA_B = 3; // room_pink
+    static constexpr int SALA_C = 4; // room_orange
+    static constexpr int SALA_F = 5; // room_blue
+    static constexpr int SALA_A = 6; // room_white
+    static constexpr int SALA_D = 7; // room_red
+    static constexpr int SALA_H = 8; // room_checker
+    static constexpr int SALA_I = 9; // room_boss
+
+    void mostrarMensaje(const std::string& texto, float segundos = 3.0f) {
+        mensajePantalla = texto;
+        tiempoMensaje = segundos;
+    }
 
     int seleccionarPersonaje() {
         sf::Font fuente;
@@ -333,80 +358,93 @@ private:
         salas.clear();
         salas.resize(10);
 
-        salas[0].nombre = "Sala morada izquierda";
-        salas[0].rutaFondo = "assets/images/rooms/room_left_purple.jpeg";
+        // SALA SECRETA: no aparece en el minimapa.
+        // Se desbloquea cuando limpias la sala E / verde.
+        salas[SALA_SECRETA].nombre = "Sala secreta";
+        salas[SALA_SECRETA].rutaFondo = "assets/images/rooms/room_left_purple.jpeg";
+        salas[SALA_SECRETA].visibleEnMapa = false;
+        salas[SALA_SECRETA].derecha = SALA_E;
 
-        salas[1].nombre = "Sala verde";
-        salas[1].rutaFondo = "assets/images/rooms/room_green.jpeg";
-        salas[1].mapaColumna = 0;
-        salas[1].mapaFila = 1;
-        salas[1].colorMapa = sf::Color(70, 170, 80);
-        salas[1].derecha = 4;
+        // E = room_green
+        salas[SALA_E].nombre = "E - Sala verde";
+        salas[SALA_E].rutaFondo = "assets/images/rooms/room_green.jpeg";
+        salas[SALA_E].mapaColumna = 1;
+        salas[SALA_E].mapaFila = 1;
+        salas[SALA_E].colorMapa = sf::Color(70, 170, 80);
+        salas[SALA_E].derecha = SALA_C;
+        // La izquierda se activa después de limpiar esta sala.
+        salas[SALA_E].izquierda = -1;
 
-        salas[2].nombre = "Sala turquesa";
-        salas[2].rutaFondo = "assets/images/rooms/room_teal.jpeg";
-        salas[2].mapaColumna = 0;
-        salas[2].mapaFila = 2;
-        salas[2].colorMapa = sf::Color(40, 180, 175);
-        salas[2].derecha = 5;
+        // G = room_teal
+        salas[SALA_G].nombre = "G - Sala turquesa";
+        salas[SALA_G].rutaFondo = "assets/images/rooms/room_teal.jpeg";
+        salas[SALA_G].mapaColumna = 1;
+        salas[SALA_G].mapaFila = 2;
+        salas[SALA_G].colorMapa = sf::Color(40, 180, 175);
+        salas[SALA_G].derecha = SALA_F;
 
-        salas[3].nombre = "Sala rosa";
-        salas[3].rutaFondo = "assets/images/rooms/room_pink.jpeg";
-        salas[3].mapaColumna = 1;
-        salas[3].mapaFila = 0;
-        salas[3].colorMapa = sf::Color(210, 100, 170);
-        salas[3].abajo = 4;
-        salas[3].derecha = 6;
+        // B = room_pink
+        salas[SALA_B].nombre = "B - Sala rosa";
+        salas[SALA_B].rutaFondo = "assets/images/rooms/room_pink.jpeg";
+        salas[SALA_B].mapaColumna = 2;
+        salas[SALA_B].mapaFila = 0;
+        salas[SALA_B].colorMapa = sf::Color(210, 100, 170);
+        salas[SALA_B].derecha = SALA_A;
+        salas[SALA_B].abajo = SALA_C;
 
-        salas[4].nombre = "Sala central naranja";
-        salas[4].rutaFondo = "assets/images/rooms/room_orange.jpeg";
-        salas[4].mapaColumna = 1;
-        salas[4].mapaFila = 1;
-        salas[4].colorMapa = sf::Color(220, 130, 45);
-        salas[4].arriba = 3;
-        salas[4].abajo = 5;
-        salas[4].izquierda = 1;
-        salas[4].derecha = 7;
+        // C = room_orange, conexión hacia todos los lados.
+        salas[SALA_C].nombre = "C - Sala naranja";
+        salas[SALA_C].rutaFondo = "assets/images/rooms/room_orange.jpeg";
+        salas[SALA_C].mapaColumna = 2;
+        salas[SALA_C].mapaFila = 1;
+        salas[SALA_C].colorMapa = sf::Color(220, 130, 45);
+        salas[SALA_C].arriba = SALA_B;
+        salas[SALA_C].abajo = SALA_F;
+        salas[SALA_C].izquierda = SALA_E;
+        salas[SALA_C].derecha = SALA_D;
 
-        salas[5].nombre = "Sala azul";
-        salas[5].rutaFondo = "assets/images/rooms/room_blue.jpeg";
-        salas[5].mapaColumna = 1;
-        salas[5].mapaFila = 2;
-        salas[5].colorMapa = sf::Color(75, 130, 220);
-        salas[5].arriba = 4;
-        salas[5].izquierda = 2;
-        salas[5].derecha = 8;
+        // F = room_blue
+        salas[SALA_F].nombre = "F - Sala azul";
+        salas[SALA_F].rutaFondo = "assets/images/rooms/room_blue.jpeg";
+        salas[SALA_F].mapaColumna = 2;
+        salas[SALA_F].mapaFila = 2;
+        salas[SALA_F].colorMapa = sf::Color(75, 130, 220);
+        salas[SALA_F].arriba = SALA_C;
+        salas[SALA_F].izquierda = SALA_G;
+        salas[SALA_F].derecha = SALA_H;
 
-        salas[6].nombre = "Sala blanca";
-        salas[6].rutaFondo = "assets/images/rooms/room_white.jpeg";
-        salas[6].mapaColumna = 2;
-        salas[6].mapaFila = 0;
-        salas[6].colorMapa = sf::Color(230, 230, 210);
-        salas[6].izquierda = 3;
+        // A = room_white, sala inicial.
+        salas[SALA_A].nombre = "A - Sala blanca";
+        salas[SALA_A].rutaFondo = "assets/images/rooms/room_white.jpeg";
+        salas[SALA_A].mapaColumna = 3;
+        salas[SALA_A].mapaFila = 0;
+        salas[SALA_A].colorMapa = sf::Color(230, 230, 210);
+        salas[SALA_A].izquierda = SALA_B;
 
-        salas[7].nombre = "Sala roja";
-        salas[7].rutaFondo = "assets/images/rooms/room_red.jpeg";
-        salas[7].mapaColumna = 2;
-        salas[7].mapaFila = 1;
-        salas[7].colorMapa = sf::Color(190, 55, 55);
-        salas[7].izquierda = 4;
-        salas[7].abajo = 8;
+        // D = room_red
+        salas[SALA_D].nombre = "D - Sala roja";
+        salas[SALA_D].rutaFondo = "assets/images/rooms/room_red.jpeg";
+        salas[SALA_D].mapaColumna = 3;
+        salas[SALA_D].mapaFila = 1;
+        salas[SALA_D].colorMapa = sf::Color(190, 55, 55);
+        salas[SALA_D].izquierda = SALA_C;
 
-        salas[8].nombre = "Sala tablero";
-        salas[8].rutaFondo = "assets/images/rooms/room_checker.jpeg";
-        salas[8].mapaColumna = 2;
-        salas[8].mapaFila = 2;
-        salas[8].colorMapa = sf::Color(170, 170, 170);
-        salas[8].arriba = 7;
-        salas[8].abajo = 9;
-        salas[8].izquierda = 5;
+        // H = room_checker
+        salas[SALA_H].nombre = "H - Sala tablero";
+        salas[SALA_H].rutaFondo = "assets/images/rooms/room_checker.jpeg";
+        salas[SALA_H].mapaColumna = 3;
+        salas[SALA_H].mapaFila = 2;
+        salas[SALA_H].colorMapa = sf::Color(170, 170, 170);
+        salas[SALA_H].izquierda = SALA_F;
+        salas[SALA_H].abajo = SALA_I;
 
-        salas[9].nombre = "Sala boss";
-        salas[9].rutaFondo = "assets/images/rooms/room_boss.jpeg";
-        salas[9].mapaColumna = 2;
-        salas[9].mapaFila = 3;
-        salas[9].colorMapa = sf::Color(125, 70, 165);
-        salas[9].arriba = 8;
+        // I = room_boss. Requiere llave.
+        salas[SALA_I].nombre = "I - Sala boss";
+        salas[SALA_I].rutaFondo = "assets/images/rooms/room_boss.jpeg";
+        salas[SALA_I].mapaColumna = 3;
+        salas[SALA_I].mapaFila = 3;
+        salas[SALA_I].colorMapa = sf::Color(125, 70, 165);
+        salas[SALA_I].arriba = SALA_H;
 
         for (auto& sala : salas) {
             sala.texturaFondo.loadFromFile(sala.rutaFondo);
@@ -428,46 +466,74 @@ private:
             return;
         }
 
+        // Estos spawns son temporales. Luego los ajustamos sala por sala.
         switch (salaActual) {
-            case 1:
+            case SALA_SECRETA:
+                enemigos.push_back(std::make_unique<Rusher>(250.0f, 250.0f));
+                enemigos.push_back(std::make_unique<Rusher>(550.0f, 360.0f));
+                enemigos.push_back(std::make_unique<Blob>(400.0f, 430.0f));
+                break;
+
+            case SALA_E:
                 enemigos.push_back(std::make_unique<Blob>(220.0f, 220.0f));
                 enemigos.push_back(std::make_unique<Blob>(580.0f, 390.0f));
                 break;
-            case 2:
+
+            case SALA_G:
                 enemigos.push_back(std::make_unique<Rusher>(620.0f, 300.0f));
                 break;
-            case 3:
+
+            case SALA_B:
                 enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 240.0f));
                 break;
-            case 5:
+
+            case SALA_F:
                 enemigos.push_back(std::make_unique<Raptor>(620.0f, 180.0f));
                 enemigos.push_back(std::make_unique<Blob>(240.0f, 420.0f));
                 break;
-            case 6:
+
+            case SALA_A:
                 enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 230.0f));
                 enemigos.push_back(std::make_unique<Blob>(220.0f, 380.0f));
                 break;
-            case 7:
+
+            case SALA_D:
                 enemigos.push_back(std::make_unique<Raptor>(620.0f, 170.0f));
                 enemigos.push_back(std::make_unique<Rusher>(220.0f, 400.0f));
                 break;
-            case 8:
+
+            case SALA_H:
                 enemigos.push_back(std::make_unique<Blob>(250.0f, 210.0f));
                 enemigos.push_back(std::make_unique<Blob>(550.0f, 210.0f));
                 enemigos.push_back(std::make_unique<Raptor>(400.0f, 410.0f));
                 break;
-            case 9:
+
+            case SALA_I:
                 enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 210.0f));
                 enemigos.push_back(std::make_unique<Raptor>(230.0f, 430.0f));
                 enemigos.push_back(std::make_unique<Rusher>(570.0f, 430.0f));
                 break;
+
             default:
                 break;
         }
     }
 
+    bool puedeEntrarSala(int nuevaSala) {
+        if (nuevaSala == SALA_I && !llaveObtenida) {
+            mostrarMensaje("Necesitas una llave para entrar al jefe", 3.0f);
+            return false;
+        }
+
+        return true;
+    }
+
     void cambiarSala(int nuevaSala, sf::Vector2f nuevaPosicionJugador) {
         if (nuevaSala < 0 || nuevaSala >= static_cast<int>(salas.size())) {
+            return;
+        }
+
+        if (!puedeEntrarSala(nuevaSala)) {
             return;
         }
 
@@ -579,7 +645,10 @@ private:
             dibujarPuerta(CENTRO_X - 45.0f, LIMITE_ABA - 15.0f, 90.0f, 20.0f);
         }
         if (sala.izquierda != -1) {
-            dibujarPuerta(LIMITE_IZQ - 5.0f, CENTRO_Y - 45.0f, 20.0f, 90.0f);
+            // La puerta secreta de la sala verde existe, pero es invisible.
+            if (!(salaActual == SALA_E && sala.izquierda == SALA_SECRETA)) {
+                dibujarPuerta(LIMITE_IZQ - 5.0f, CENTRO_Y - 45.0f, 20.0f, 90.0f);
+            }
         }
         if (sala.derecha != -1) {
             dibujarPuerta(LIMITE_DER - 15.0f, CENTRO_Y - 45.0f, 20.0f, 90.0f);
@@ -630,7 +699,7 @@ private:
         ventana.draw(panel);
 
         for (int i = 0; i < static_cast<int>(salas.size()); i++) {
-            if (salas[i].mapaColumna < 0 || salas[i].mapaFila < 0) {
+            if (!salas[i].visibleEnMapa || salas[i].mapaColumna < 0 || salas[i].mapaFila < 0) {
                 continue;
             }
 
@@ -641,7 +710,7 @@ private:
                 if (vecino == -1 || vecino < 0 || vecino >= static_cast<int>(salas.size())) {
                     return;
                 }
-                if (salas[vecino].mapaColumna < 0 || salas[vecino].mapaFila < 0) {
+                if (!salas[vecino].visibleEnMapa || salas[vecino].mapaColumna < 0 || salas[vecino].mapaFila < 0) {
                     return;
                 }
                 sf::Vector2f posVecino = posicionMiniSala(vecino, baseX, baseY, paso);
@@ -659,7 +728,7 @@ private:
         }
 
         for (int i = 0; i < static_cast<int>(salas.size()); i++) {
-            if (salas[i].mapaColumna < 0 || salas[i].mapaFila < 0) {
+            if (!salas[i].visibleEnMapa || salas[i].mapaColumna < 0 || salas[i].mapaFila < 0) {
                 continue;
             }
 
@@ -682,6 +751,82 @@ private:
                 ventana.draw(iconoJugador);
             }
         }
+    }
+
+    void actualizarLlave() {
+        if (!llaveDisponible || llaveObtenida || salaActual != SALA_SECRETA) {
+            return;
+        }
+
+        if (colisionan(isaac->getCentroHitbox(), isaac->getRadio(), posicionLlave, 14.0f)) {
+            llaveDisponible = false;
+            llaveObtenida = true;
+            mostrarMensaje("Llave obtenida. Ahora puedes abrir la sala I", 3.0f);
+        }
+    }
+
+    void dibujarLlave() {
+        if (!llaveDisponible || llaveObtenida || salaActual != SALA_SECRETA) {
+            return;
+        }
+
+        sf::CircleShape cabeza(8.0f);
+        cabeza.setOrigin({8.0f, 8.0f});
+        cabeza.setPosition(posicionLlave);
+        cabeza.setFillColor(sf::Color(255, 220, 60));
+        cabeza.setOutlineThickness(2.0f);
+        cabeza.setOutlineColor(sf::Color(80, 55, 10));
+        ventana.draw(cabeza);
+
+        sf::RectangleShape cuerpo({28.0f, 6.0f});
+        cuerpo.setOrigin({0.0f, 3.0f});
+        cuerpo.setPosition({posicionLlave.x + 6.0f, posicionLlave.y});
+        cuerpo.setFillColor(sf::Color(255, 220, 60));
+        cuerpo.setOutlineThickness(1.0f);
+        cuerpo.setOutlineColor(sf::Color(80, 55, 10));
+        ventana.draw(cuerpo);
+
+        sf::RectangleShape diente({5.0f, 12.0f});
+        diente.setPosition({posicionLlave.x + 27.0f, posicionLlave.y});
+        diente.setFillColor(sf::Color(255, 220, 60));
+        ventana.draw(diente);
+    }
+
+    void dibujarMensajePantalla() {
+        if (!hayFuenteHUD || tiempoMensaje <= 0.0f || mensajePantalla.empty()) {
+            return;
+        }
+
+        sf::Text texto(fuenteHUD, mensajePantalla, 24);
+        texto.setFillColor(sf::Color(255, 240, 140));
+        texto.setOutlineColor(sf::Color::Black);
+        texto.setOutlineThickness(3.0f);
+        auto bounds = texto.getLocalBounds();
+        texto.setOrigin({bounds.size.x / 2.0f, 0.0f});
+        texto.setPosition({400.0f, 82.0f});
+        ventana.draw(texto);
+    }
+
+    void dibujarIndicadorLlaveHUD() {
+        if (!llaveObtenida) {
+            return;
+        }
+
+        sf::CircleShape cabeza(6.0f);
+        cabeza.setOrigin({6.0f, 6.0f});
+        cabeza.setPosition({52.0f, 52.0f});
+        cabeza.setFillColor(sf::Color(255, 220, 60));
+        cabeza.setOutlineThickness(2.0f);
+        cabeza.setOutlineColor(sf::Color::Black);
+        ventana.draw(cabeza);
+
+        sf::RectangleShape cuerpo({22.0f, 5.0f});
+        cuerpo.setOrigin({0.0f, 2.5f});
+        cuerpo.setPosition({58.0f, 52.0f});
+        cuerpo.setFillColor(sf::Color(255, 220, 60));
+        cuerpo.setOutlineThickness(1.0f);
+        cuerpo.setOutlineColor(sf::Color::Black);
+        ventana.draw(cuerpo);
     }
 
     void dibujarHUD() {
@@ -714,11 +859,18 @@ private:
         proyectilesSpreadshot.clear();
         enemigos.clear();
 
-        salaActual = 6;
+        salaActual = SALA_A;
+        puertaSecretaDesbloqueada = false;
+        llaveDisponible = false;
+        llaveObtenida = false;
+        mensajePantalla.clear();
+        tiempoMensaje = 0.0f;
+
         for (auto& sala : salas) {
             sala.visitada = false;
             sala.limpiada = false;
         }
+        salas[SALA_E].izquierda = -1;
         salas[salaActual].visitada = true;
 
         isaac->reiniciar(400.0f, 300.0f);
@@ -726,6 +878,10 @@ private:
     }
 
     void actualizar(float dt) {
+        if (tiempoMensaje > 0.0f) {
+            tiempoMensaje -= dt;
+        }
+
         isaac->actualizar(dt);
         manejarDisparos();
 
@@ -777,10 +933,23 @@ private:
             else i++;
         }
 
-        if (enemigos.empty()) {
+        if (enemigos.empty() && !salas[salaActual].limpiada) {
             salas[salaActual].limpiada = true;
+
+            if (salaActual == SALA_E && !puertaSecretaDesbloqueada) {
+                puertaSecretaDesbloqueada = true;
+                salas[SALA_E].izquierda = SALA_SECRETA;
+                mostrarMensaje("Busca una puerta invisible", 4.0f);
+            }
+
+            if (salaActual == SALA_SECRETA && !llaveObtenida) {
+                llaveDisponible = true;
+                posicionLlave = {400.0f, 300.0f};
+                mostrarMensaje("Aparecio una llave", 3.0f);
+            }
         }
 
+        actualizarLlave();
         intentarCambioSala();
 
         if (!isaac->estaVivo()) reiniciarPartida();
@@ -818,8 +987,11 @@ private:
             }
         }
 
+        dibujarLlave();
         dibujarHUD();
+        dibujarIndicadorLlaveHUD();
         dibujarMiniMapa();
+        dibujarMensajePantalla();
         ventana.display();
     }
 
@@ -827,10 +999,21 @@ public:
     Juego()
         : ventana(sf::VideoMode({800, 600}), "Aventuras en el Edificio de Software"),
           hayTexturaCorazon(false),
-          salaActual(6),
-          bloqueoCambioSala(false) {
+          salaActual(SALA_A),
+          bloqueoCambioSala(false),
+          puertaSecretaDesbloqueada(false),
+          llaveDisponible(false),
+          llaveObtenida(false),
+          posicionLlave(400.0f, 300.0f),
+          tiempoMensaje(0.0f),
+          hayFuenteHUD(false) {
         ventana.setFramerateLimit(60);
         std::srand(static_cast<unsigned>(std::time(nullptr)));
+
+        hayFuenteHUD = fuenteHUD.openFromFile("assets/fonts/MedievalSharp.ttf");
+        if (!hayFuenteHUD) {
+            hayFuenteHUD = fuenteHUD.openFromFile("assets/fonts/arial.ttf");
+        }
 
         hayTexturaCorazon = texturaCorazon.loadFromFile(
             "assets/images/heart_pixel_art_32x32.png"
