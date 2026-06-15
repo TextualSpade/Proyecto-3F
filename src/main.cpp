@@ -349,6 +349,149 @@ private:
         return false;
     }
 
+    void dibujarLineaWikipedia(const sf::Font& fuente,
+                               const std::string& texto,
+                               float x,
+                               float& y,
+                               unsigned int tam,
+                               sf::Color color,
+                               bool titulo = false) {
+        sf::Text linea(fuente, texto, tam);
+        linea.setFillColor(color);
+        linea.setOutlineColor(sf::Color(20, 10, 5));
+        linea.setOutlineThickness(titulo ? 2.0f : 1.0f);
+        linea.setPosition({x, y});
+        ventana.draw(linea);
+        y += static_cast<float>(tam) + (titulo ? 14.0f : 8.0f);
+    }
+
+    void mostrarWikipedia() {
+        sf::Font fuente;
+        bool hayFuente = fuente.openFromFile("assets/fonts/MedievalSharp.ttf");
+        if (!hayFuente) hayFuente = fuente.openFromFile("assets/fonts/arial.ttf");
+
+        if (!hayFuente) {
+            mostrarMensaje("No se pudo cargar la fuente", 2.0f);
+            return;
+        }
+
+        std::vector<std::vector<std::string>> paginas = {
+            {
+                "WIKIPEDIA - PERSONAJES",
+                "Heroe de Software: Un estudiante elegido por el edificio. Tras quedarse",
+                "programando hasta tarde, encontro una falla extrana en los laboratorios y",
+                "desperto con una espada de energia hecha de codigo compilado.",
+                "",
+                "Blob: Antes era un alumno que nunca cerraba sus ciclos while. Con el tiempo,",
+                "sus errores se acumularon hasta convertirlo en una masa lenta de tareas",
+                "pendientes, cafes frios y codigo sin identar.",
+                "",
+                "Raptor: Fue un estudiante brillante de estructuras de datos, pero intento",
+                "optimizar tanto sus proyectos que termino fusionandose con sus propios",
+                "algoritmos. Ahora ataca desde lejos y calcula trayectorias como si fueran",
+                "examenes sorpresa."
+            },
+            {
+                "WIKIPEDIA - ENEMIGOS",
+                "Rusher: Era el estudiante que dejaba todo al ultimo minuto. Corrio tanto",
+                "para entregar practicas, reportes y proyectos finales que su ansiedad se",
+                "volvio su unica forma de moverse. Si te ve, se lanza sin pensarlo.",
+                "",
+                "Spreadshot: Fue un alumno de software que abria veinte pestañas, tres IDEs",
+                "y cinco chats al mismo tiempo. Su mente se fragmento y ahora dispara en",
+                "varias direcciones, como si cada proyectil fuera una tarea olvidada.",
+                "",
+                "Sala Secreta: Un pasillo que no aparece en el mapa oficial del CETI. Dicen",
+                "que ahi se guardan los proyectos que nunca se pudieron compilar."
+            },
+            {
+                "WIKIPEDIA - ITEMS",
+                "Corazon: Recupera un corazon de vida. Se dice que aparece cuando el edificio",
+                "reconoce que el estudiante aun tiene oportunidad de pasar el semestre.",
+                "",
+                "Rayo: Aumenta la velocidad 50% durante 30 segundos. Si tomas otro, se",
+                "acumula el efecto y tambien se suma el tiempo. Es energia pura de cafe,",
+                "estres y motivacion de ultima hora.",
+                "",
+                "Estrella: Activa el disparo triple durante 15 segundos. Si tomas otra, el",
+                "efecto se acumula y dura mas. Representa ese momento raro en el que todo",
+                "el codigo funciona a la primera.",
+                "",
+                "Llave: Abre la sala del jefe. Solo aparece en la sala secreta despues de",
+                "derrotar a todos los enemigos que custodian el camino oculto."
+            }
+        };
+
+        int pagina = 0;
+        while (ventana.isOpen()) {
+            while (const std::optional<sf::Event> evento = ventana.pollEvent()) {
+                if (evento->is<sf::Event::Closed>()) {
+                    ventana.close();
+                    return;
+                }
+
+                if (const auto* kp = evento->getIf<sf::Event::KeyPressed>()) {
+                    if (kp->code == sf::Keyboard::Key::Escape ||
+                        kp->code == sf::Keyboard::Key::Enter ||
+                        kp->code == sf::Keyboard::Key::Backspace) {
+                        return;
+                    }
+
+                    if (kp->code == sf::Keyboard::Key::Right ||
+                        kp->code == sf::Keyboard::Key::D ||
+                        kp->code == sf::Keyboard::Key::Space) {
+                        pagina = (pagina + 1) % static_cast<int>(paginas.size());
+                        reproducirSonido(bufferMenuSelect, hayMenuSelect, 50.0f);
+                    }
+
+                    if (kp->code == sf::Keyboard::Key::Left ||
+                        kp->code == sf::Keyboard::Key::A) {
+                        pagina = (pagina + static_cast<int>(paginas.size()) - 1) %
+                                 static_cast<int>(paginas.size());
+                        reproducirSonido(bufferMenuSelect, hayMenuSelect, 50.0f);
+                    }
+                }
+            }
+
+            ventana.clear(sf::Color(8, 8, 12));
+
+            sf::RectangleShape panel({720.0f, 500.0f});
+            panel.setPosition({40.0f, 50.0f});
+            panel.setFillColor(sf::Color(45, 28, 18, 235));
+            panel.setOutlineColor(sf::Color(225, 180, 65));
+            panel.setOutlineThickness(4.0f);
+            ventana.draw(panel);
+
+            float y = 78.0f;
+            for (size_t i = 0; i < paginas[pagina].size(); i++) {
+                bool esTitulo = i == 0;
+                dibujarLineaWikipedia(
+                    fuente,
+                    paginas[pagina][i],
+                    70.0f,
+                    y,
+                    esTitulo ? 30u : 18u,
+                    esTitulo ? sf::Color(255, 225, 120) : sf::Color(235, 220, 185),
+                    esTitulo
+                );
+            }
+
+            sf::Text ayuda(fuente, "A/D o Flechas: cambiar pagina   |   Enter/Esc: regresar", 16);
+            ayuda.setFillColor(sf::Color(190, 170, 120));
+            ayuda.setPosition({75.0f, 525.0f});
+            ventana.draw(ayuda);
+
+            sf::Text contador(fuente,
+                "Pagina " + std::to_string(pagina + 1) + " / " + std::to_string(paginas.size()),
+                16);
+            contador.setFillColor(sf::Color(255, 220, 100));
+            contador.setPosition({610.0f, 525.0f});
+            ventana.draw(contador);
+
+            ventana.display();
+        }
+    }
+
     bool mostrarMenuPrincipal() {
         musicaPortada.stop();
 
@@ -391,7 +534,7 @@ private:
                         }
 
                         if (opcion == 1) {
-                            mostrarMensaje("Wikipedia estara disponible despues", 2.0f);
+                            mostrarWikipedia();
                         } else if (opcion == 2) {
                             mostrarMensaje("Controles: WASD mover, IJKL disparar", 2.5f);
                         } else if (opcion == 3) {
@@ -664,10 +807,12 @@ private:
     }
 
     float probabilidadDropEnemigo(Enemigo* enemigo) const {
-        if (dynamic_cast<Blob*>(enemigo)) return 0.25f;
-        if (dynamic_cast<Raptor*>(enemigo)) return 0.35f;
-        if (dynamic_cast<Rusher*>(enemigo)) return 0.50f;
-        if (dynamic_cast<Spreadshot*>(enemigo)) return 0.50f;
+        // Drop rates reducidos para que los objetos sean especiales,
+        // no algo que aparezca en cada combate.
+        if (dynamic_cast<Blob*>(enemigo)) return 0.10f;
+        if (dynamic_cast<Raptor*>(enemigo)) return 0.15f;
+        if (dynamic_cast<Rusher*>(enemigo)) return 0.20f;
+        if (dynamic_cast<Spreadshot*>(enemigo)) return 0.20f;
         return 0.0f;
     }
 

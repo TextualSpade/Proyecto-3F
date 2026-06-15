@@ -29,15 +29,12 @@ ProyectilJugador::ProyectilJugador(sf::Vector2f posInicial, sf::Vector2f dir,
     float sx = ANCHO_DESTINO / static_cast<float>(tam.x);
     float sy = ALTO_DESTINO  / static_cast<float>(tam.y);
 
-    if (dir.x < 0.0f) {
-        escalaX = -sx; escalaY = sy; rotacion = 0.0f;
-    } else if (dir.x > 0.0f) {
-        escalaX =  sx; escalaY = sy; rotacion = 0.0f;
-    } else if (dir.y < 0.0f) {
-        escalaX =  sx; escalaY = sy; rotacion = -90.0f;
-    } else {
-        escalaX =  sx; escalaY = sy; rotacion = 90.0f;
-    }
+    // El proyectil puede salir en diagonal cuando la estrella activa el disparo triple.
+    // Antes solo se revisaba si dir.x era positivo/negativo, por eso al disparar
+    // hacia arriba o abajo las lanzas diagonales quedaban horizontales.
+    escalaX = sx;
+    escalaY = sy;
+    rotacion = std::atan2(dir.y, dir.x) * 180.0f / 3.14159265f;
 
     sprite.setScale({escalaX, escalaY});
     sprite.setRotation(sf::degrees(rotacion));
