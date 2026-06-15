@@ -28,4 +28,5 @@ public:
     void dibujar(sf::RenderWindow& ventana);
     void setPosicion(sf::Vector2f pos);
     bool termino() const;
+    void refrescar();
 };

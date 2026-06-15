@@ -63,3 +63,12 @@ void Animacion::setPosicion(sf::Vector2f pos) {
 }
 
 bool Animacion::termino() const { return terminada; }
+
+void Animacion::refrescar() {
+    if (frameWidth == 0) return;
+    sprite.emplace(textura);
+    sprite->setTextureRect(sf::IntRect(
+        {frameActual * frameWidth, filaActual * frameHeight},
+        {frameWidth, frameHeight}
+    ));
+}

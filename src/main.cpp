@@ -12,6 +12,7 @@
 #include "Raptor.hpp"
 #include "Rusher.hpp"
 #include "Spreadshot.hpp"
+#include "ProyectilRaptor.hpp"
 
 class Juego {
 private:
@@ -19,6 +20,7 @@ private:
     std::unique_ptr<Jugador> isaac;
     std::vector<Lagrima> lagrimas;
     std::vector<Lagrima> lagrimasEnemigas;
+    std::vector<std::unique_ptr<ProyectilRaptor>> proyectilesRaptor;
     std::vector<std::unique_ptr<Enemigo>> enemigos;
     sf::Clock reloj;
     sf::Clock relojDisparo;
@@ -50,11 +52,16 @@ private:
         for (auto& enemigo : enemigos) {
             sf::Vector2f dirSalida;
             if (enemigo->intentaDisparar(dirSalida)) {
-                lagrimasEnemigas.push_back(
-                    Lagrima(enemigo->getPosicion(), dirSalida,
-                            enemigo->velocidadProyectil(),
-                            enemigo->colorProyectil(),
-                            enemigo->radioProyectil()));
+                if (dynamic_cast<Raptor*>(enemigo.get())) {
+                    proyectilesRaptor.push_back(
+                        std::make_unique<ProyectilRaptor>(enemigo->getPosicion(), dirSalida));
+                } else {
+                    lagrimasEnemigas.push_back(
+                        Lagrima(enemigo->getPosicion(), dirSalida,
+                                enemigo->velocidadProyectil(),
+                                enemigo->colorProyectil(),
+                                enemigo->radioProyectil()));
+                }
             }
         }
     }
@@ -97,6 +104,15 @@ private:
                 lagrima.destruir();
             }
         }
+
+        for (auto& proy : proyectilesRaptor) {
+            if (!proy->estaDestruido() &&
+                colisionan(proy->getPosicion(), proy->getRadio(),
+                           isaac->getPosicion(), isaac->getRadio())) {
+                isaac->recibirDanio(1);
+                proy->golpear();
+            }
+        }
     }
 
     void dibujarHUD() {
@@ -115,9 +131,10 @@ private:
     void reiniciarPartida() {
         lagrimas.clear();
         lagrimasEnemigas.clear();
+        proyectilesRaptor.clear();
         enemigos.clear();
         isaac->reiniciar(400.0f, 300.0f);
-        enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
     }
 
     void actualizar(float dt) {
@@ -143,12 +160,20 @@ private:
             else i++;
         }
 
+        for (size_t i = 0; i < proyectilesRaptor.size(); ) {
+            proyectilesRaptor[i]->actualizar(dt);
+            if (proyectilesRaptor[i]->estaDestruido()) proyectilesRaptor.erase(proyectilesRaptor.begin() + i);
+            else i++;
+        }
+
         manejarColisiones();
 
         for (size_t i = 0; i < enemigos.size(); ) {
             bool eliminar = false;
             if (auto* blob = dynamic_cast<Blob*>(enemigos[i].get())) {
                 eliminar = blob->listo_para_eliminar();
+            } else if (auto* raptor = dynamic_cast<Raptor*>(enemigos[i].get())) {
+                eliminar = raptor->listo_para_eliminar();
             } else {
                 eliminar = enemigos[i]->estaMuerto();
             }
@@ -171,6 +196,7 @@ private:
         for (auto& enemigo : enemigos) enemigo->dibujar(ventana);
         for (auto& lagrima : lagrimas) lagrima.dibujar(ventana);
         for (auto& lagrima : lagrimasEnemigas) lagrima.dibujar(ventana);
+        for (auto& proy : proyectilesRaptor) proy->dibujar(ventana);
         dibujarHUD();
         ventana.display();
     }
@@ -181,7 +207,7 @@ public:
         std::srand(static_cast<unsigned>(std::time(nullptr)));
         isaac = std::make_unique<Jugador>(400.0f, 300.0f);
         tiempoEntreDisparos = 0.3f;
-        enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
     }
 
     void ejecutar() {
