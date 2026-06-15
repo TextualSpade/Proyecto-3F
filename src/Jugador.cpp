@@ -17,7 +17,7 @@ Jugador::Jugador(float x, float y,
 {
     posicion           = {x, y};
     velocidad          = 300.0f;
-    radio              = 40.0f;
+    radio              = 20.0f;
     vidaMaxima         = 3;
     vida               = vidaMaxima;
     tiempoInvulnerable = 0.0f;

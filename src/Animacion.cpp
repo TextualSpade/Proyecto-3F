@@ -20,7 +20,7 @@ bool Animacion::cargar(const std::string& ruta, int anchoFrame, int altoFrame) {
     frameWidth = anchoFrame;
     frameHeight = altoFrame;
     sprite.emplace(textura);
-    sprite->setOrigin({frameWidth / 2.0f, frameHeight / 2.0f});
+    sprite->setOrigin({frameWidth / 2.0f, frameHeight * 0.52f});
     sprite->setTextureRect(sf::IntRect({0, 0}, {frameWidth, frameHeight}));
     return true;
 }

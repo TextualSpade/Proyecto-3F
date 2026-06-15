@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <deque>
 #include <memory>
 #include <optional>
 #include <cstdlib>
@@ -48,7 +49,7 @@ class Juego {
 private:
     sf::RenderWindow ventana;
     std::unique_ptr<Jugador> isaac;
-    std::vector<ProyectilJugador> proyectilesJugador;
+    std::deque<ProyectilJugador> proyectilesJugador;
     std::vector<Lagrima> lagrimasEnemigas;
     std::vector<std::unique_ptr<ProyectilRaptor>> proyectilesRaptor;
     std::vector<std::unique_ptr<ProyectilSpreadshot>> proyectilesSpreadshot;
@@ -291,10 +292,7 @@ private:
         proyectilesSpreadshot.clear();
         enemigos.clear();
         isaac->reiniciar(400.0f, 300.0f);
-        enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
         enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
-        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
-        enemigos.push_back(std::make_unique<Spreadshot>(150.0f, 450.0f));
     }
 
     void actualizar(float dt) {
@@ -384,10 +382,7 @@ public:
         isaac = std::make_unique<Jugador>(400.0f, 300.0f,
                                           cfg.sheet1, cfg.sheet2, cfg.proyectil);
 
-        enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
         enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
-        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
-        enemigos.push_back(std::make_unique<Spreadshot>(150.0f, 450.0f));
     }
 
     void ejecutar() {

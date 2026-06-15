@@ -2,7 +2,7 @@
 #include <cmath>
 
 Rusher::Rusher(float x, float y)
-    : Enemigo({x, y}, 30.0f, 40.0f, 12, 0, sf::Color::Transparent) {
+    : Enemigo({x, y}, 30.0f, 20.0f, 12, 0, sf::Color::Transparent) {
     estado = Estado::Apuntando;
     dirEmbestida = {0.0f, 0.0f};
     velocidadEmbestida = 540.0f;

@@ -14,7 +14,7 @@ namespace {
 }
 
 Spreadshot::Spreadshot(float x, float y)
-    : Enemigo({x, y}, 0.0f, 40.0f, 3, 0, sf::Color::Transparent) {
+    : Enemigo({x, y}, 0.0f, 20.0f, 3, 0, sf::Color::Transparent) {
     estado = Estado::Idle;
     tiempoRecarga = 3.0f;
     cronometro = 0.0f;

@@ -2,7 +2,7 @@
 #include <cmath>
 
 Blob::Blob(float x, float y)
-    : Enemigo({x, y}, 110.0f, 40.0f, 3, 0, sf::Color::Transparent) {
+    : Enemigo({x, y}, 110.0f, 20.0f, 3, 0, sf::Color::Transparent) {
     estadoAnim = EstadoAnim::Walk;
     tiempoParada = 1.5f;
     cronometroParada = 0.0f;
