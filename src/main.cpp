@@ -48,6 +48,8 @@ static constexpr float ESCALA_SEL  = 0.45f;
 class Juego {
 private:
     sf::RenderWindow ventana;
+    sf::Texture texturaCorazon;
+    bool hayTexturaCorazon;
     std::unique_ptr<Jugador> isaac;
     std::deque<ProyectilJugador> proyectilesJugador;
     std::vector<Lagrima> lagrimasEnemigas;
@@ -296,12 +298,24 @@ private:
 
     void dibujarHUD() {
         for (int i = 0; i < isaac->getVidaMaxima(); i++) {
-            sf::RectangleShape corazon({22.0f, 22.0f});
-            corazon.setPosition({50.0f + i * 30.0f, 8.0f});
-            corazon.setFillColor(i < isaac->getVida()
-                ? sf::Color(220, 40, 40)
-                : sf::Color(80, 80, 80));
-            ventana.draw(corazon);
+            if (hayTexturaCorazon) {
+                sf::Sprite corazon(texturaCorazon);
+                corazon.setPosition({50.0f + i * 36.0f, 6.0f});
+                corazon.setScale({1.0f, 1.0f});
+
+                if (i >= isaac->getVida()) {
+                    corazon.setColor(sf::Color(70, 70, 70, 140));
+                }
+
+                ventana.draw(corazon);
+            } else {
+                sf::RectangleShape corazon({22.0f, 22.0f});
+                corazon.setPosition({50.0f + i * 30.0f, 8.0f});
+                corazon.setFillColor(i < isaac->getVida()
+                    ? sf::Color(220, 40, 40)
+                    : sf::Color(80, 80, 80));
+                ventana.draw(corazon);
+            }
         }
     }
 
@@ -411,9 +425,16 @@ private:
     }
 
 public:
-    Juego() : ventana(sf::VideoMode({800, 600}), "Aventuras en el Edificio de Software") {
+    Juego()
+        : ventana(sf::VideoMode({800, 600}), "Aventuras en el Edificio de Software"),
+          hayTexturaCorazon(false) {
         ventana.setFramerateLimit(60);
         std::srand(static_cast<unsigned>(std::time(nullptr)));
+
+        hayTexturaCorazon = texturaCorazon.loadFromFile(
+            "assets/images/heart_pixel_art_32x32.png"
+        );
+
         tiempoEntreDisparos = 0.3f;
 
         personajeElegido = seleccionarPersonaje();
