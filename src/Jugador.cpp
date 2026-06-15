@@ -3,7 +3,7 @@
 
 static constexpr int   FW          = 302;
 static constexpr int   FH          = 302;
-static constexpr float ESCALA      = 0.20f;
+static constexpr float ESCALA      = 0.42f;
 static constexpr float VEL_IDLE    = 0.08f;
 static constexpr float VEL_RUN     = 0.06f;
 static constexpr float VEL_SLASH   = 0.05f;
@@ -15,17 +15,19 @@ Jugador::Jugador(float x, float y,
                  const std::string& sheet2,
                  const std::string& proyectil)
 {
-    posicion         = {x, y};
-    velocidad        = 300.0f;
-    radio            = 20.0f;
-    vidaMaxima       = 3;
-    vida             = vidaMaxima;
+    posicion           = {x, y};
+    velocidad          = 300.0f;
+    radio              = 40.0f;
+    vidaMaxima         = 3;
+    vida               = vidaMaxima;
     tiempoInvulnerable = 0.0f;
-    ultimaDireccion  = {1.0f, 0.0f};
-    usandoSheet2     = false;
-    estadoActual     = Estado::Idle;
-    miraDerecha      = true;
-    rutaProyectil    = proyectil;
+    ultimaDireccion    = {1.0f, 0.0f};
+    usandoSheet2       = false;
+    estadoActual       = Estado::Idle;
+    miraDerecha        = true;
+    rutaProyectil      = proyectil;
+    rutaSheet1         = sheet1;
+    slashSegundo       = false;
 
     animSheet1.cargar(sheet1, FW, FH);
     animSheet2.cargar(sheet2, FW, FH);
@@ -48,6 +50,7 @@ void Jugador::cambiarEstado(Estado nuevo) {
 
     estadoActual = nuevo;
     usandoSheet2 = false;
+    slashSegundo = false;
 
     switch (nuevo) {
         case Estado::Idle:
@@ -72,40 +75,55 @@ void Jugador::cambiarEstado(Estado nuevo) {
 }
 
 void Jugador::actualizarAnimacion(float dt) {
-    Animacion& anim = usandoSheet2 ? animSheet2 : animSheet1;
-    anim.actualizar(dt);
-    anim.setPosicion(posicion);
+    if (usandoSheet2) {
+        animSheet2.actualizar(dt);
+        animSheet2.setPosicion(posicion);
+    } else {
+        animSheet1.actualizar(dt);
+        animSheet1.setPosicion(posicion);
+    }
 
     switch (estadoActual) {
         case Estado::Slashing:
-            if (animSheet1.termino()) {
+            if (!slashSegundo && animSheet1.termino()) {
+                slashSegundo = true;
                 animSheet1.establecerRango(4, 10, 2, VEL_SLASH, false);
                 aplicarFlip();
-            }
-            if (animSheet1.termino()) {
+            } else if (slashSegundo && animSheet1.termino()) {
                 estadoActual = Estado::Idle;
+                slashSegundo = false;
+                usandoSheet2 = false;
                 animSheet1.establecerRango(0, 0, 10, VEL_IDLE, true);
                 aplicarFlip();
             }
             break;
-        case Estado::Hurt:
-            if (animSheet2.termino()) {
+        case Estado::Hurt: {
+            static bool hurtSegundo = false;
+            if (!hurtSegundo && animSheet2.termino()) {
+                hurtSegundo = true;
                 animSheet2.establecerRango(2, 10, 2, VEL_HURT, false);
                 aplicarFlip();
-            }
-            if (animSheet2.termino()) {
+            } else if (hurtSegundo && animSheet2.termino()) {
+                hurtSegundo = false;
                 estadoActual = Estado::Idle;
                 usandoSheet2 = false;
                 animSheet1.establecerRango(0, 0, 10, VEL_IDLE, true);
                 aplicarFlip();
             }
             break;
-        case Estado::Dying:
-            if (animSheet2.termino()) {
+        }
+        case Estado::Dying: {
+            static bool dyingSegundo = false;
+            if (!dyingSegundo && animSheet2.termino()) {
+                dyingSegundo = true;
                 animSheet2.establecerRango(4, 10, 5, VEL_DYING, false);
                 aplicarFlip();
             }
+            if (dyingSegundo && animSheet2.termino()) {
+                dyingSegundo = false;
+            }
             break;
+        }
         default:
             break;
     }
@@ -166,11 +184,14 @@ void Jugador::actualizar(float dt) {
 
 void Jugador::dibujar(sf::RenderWindow& ventana) {
     if (esInvulnerable()) {
-        float t = tiempoInvulnerable * 10.0f;
-        if (static_cast<int>(t) % 2 == 0) return;
+        float t = tiempoInvulnerable * 8.0f;
+        if (static_cast<int>(t) % 2 != 0) return;
     }
-    Animacion& anim = usandoSheet2 ? animSheet2 : animSheet1;
-    anim.dibujar(ventana);
+    if (usandoSheet2) {
+        animSheet2.dibujar(ventana);
+    } else {
+        animSheet1.dibujar(ventana);
+    }
 }
 
 void Jugador::recibirDanio(int cantidad) {
@@ -192,20 +213,21 @@ void Jugador::reiniciar(float x, float y) {
     ultimaDireccion    = {1.0f, 0.0f};
     miraDerecha        = true;
     usandoSheet2       = false;
+    slashSegundo       = false;
     estadoActual       = Estado::Idle;
     animSheet1.establecerRango(0, 0, 10, VEL_IDLE, true);
     animSheet1.setPosicion(posicion);
     aplicarFlip();
 }
 
-bool Jugador::estaVivo()      const { return vida > 0; }
+bool Jugador::estaVivo()       const { return vida > 0; }
 bool Jugador::esInvulnerable() const { return tiempoInvulnerable > 0.0f; }
 bool Jugador::estaDisparable() const { return estadoActual != Estado::Dying; }
 
-sf::Vector2f Jugador::getPosicion()        const { return posicion; }
-sf::Vector2f Jugador::getUltimaDireccion() const { return ultimaDireccion; }
-float        Jugador::getRadio()           const { return radio; }
-int          Jugador::getVida()            const { return vida; }
-int          Jugador::getVidaMaxima()      const { return vidaMaxima; }
-const std::string& Jugador::getRutaProyectil() const { return rutaProyectil; }
-const std::string& Jugador::getRutaSheet1()    const { return rutaSheet1; }
+sf::Vector2f       Jugador::getPosicion()        const { return posicion; }
+sf::Vector2f       Jugador::getUltimaDireccion() const { return ultimaDireccion; }
+float              Jugador::getRadio()           const { return radio; }
+int                Jugador::getVida()            const { return vida; }
+int                Jugador::getVidaMaxima()      const { return vidaMaxima; }
+const std::string& Jugador::getRutaProyectil()   const { return rutaProyectil; }
+const std::string& Jugador::getRutaSheet1()      const { return rutaSheet1; }

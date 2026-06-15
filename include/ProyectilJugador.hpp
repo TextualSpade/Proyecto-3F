@@ -1,11 +1,12 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <string>
+#include <optional>
 
 class ProyectilJugador {
 private:
     sf::Texture textura;
-    sf::Sprite sprite;
+    std::optional<sf::Sprite> sprite;
     sf::Vector2f posicion;
     sf::Vector2f direccion;
     float velocidad;

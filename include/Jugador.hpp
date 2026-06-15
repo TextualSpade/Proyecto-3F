@@ -19,6 +19,7 @@ private:
     Animacion animSheet1;
     Animacion animSheet2;
     bool usandoSheet2;
+    bool slashSegundo;
 
     Estado estadoActual;
     bool miraDerecha;
