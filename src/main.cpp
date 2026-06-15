@@ -4,6 +4,7 @@
 #include <optional>
 #include <cstdlib>
 #include <ctime>
+#include <cmath>
 #include "Jugador.hpp"
 #include "Lagrima.hpp"
 #include "Enemigo.hpp"
@@ -34,10 +35,10 @@ private:
         sf::Vector2f dirDisparo{0.0f, 0.0f};
         bool disparoPresionado = false;
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))    { dirDisparo = {0.0f, -1.0f}; disparoPresionado = true; }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))  { dirDisparo = {0.0f, 1.0f};  disparoPresionado = true; }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))  { dirDisparo = {-1.0f, 0.0f}; disparoPresionado = true; }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) { dirDisparo = {1.0f, 0.0f};  disparoPresionado = true; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::I)) { dirDisparo = {0.0f, -1.0f}; disparoPresionado = true; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::K)) { dirDisparo = {0.0f, 1.0f};  disparoPresionado = true; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::J)) { dirDisparo = {-1.0f, 0.0f}; disparoPresionado = true; }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::L)) { dirDisparo = {1.0f, 0.0f};  disparoPresionado = true; }
 
         if (disparoPresionado) {
             lagrimas.push_back(Lagrima(isaac->getPosicion(), dirDisparo));
@@ -82,6 +83,9 @@ private:
                 colisionan(enemigo->getPosicion(), enemigo->getRadio(),
                            isaac->getPosicion(), isaac->getRadio())) {
                 isaac->recibirDanio(1);
+                if (auto* blob = dynamic_cast<Blob*>(enemigo.get())) {
+                    blob->tocarJugador();
+                }
             }
         }
 
@@ -114,9 +118,6 @@ private:
         enemigos.clear();
         isaac->reiniciar(400.0f, 300.0f);
         enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
-        enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
-        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
-        enemigos.push_back(std::make_unique<Spreadshot>(150.0f, 450.0f));
     }
 
     void actualizar(float dt) {
@@ -145,7 +146,13 @@ private:
         manejarColisiones();
 
         for (size_t i = 0; i < enemigos.size(); ) {
-            if (enemigos[i]->estaMuerto()) enemigos.erase(enemigos.begin() + i);
+            bool eliminar = false;
+            if (auto* blob = dynamic_cast<Blob*>(enemigos[i].get())) {
+                eliminar = blob->listo_para_eliminar();
+            } else {
+                eliminar = enemigos[i]->estaMuerto();
+            }
+            if (eliminar) enemigos.erase(enemigos.begin() + i);
             else i++;
         }
 
@@ -175,9 +182,6 @@ public:
         isaac = std::make_unique<Jugador>(400.0f, 300.0f);
         tiempoEntreDisparos = 0.3f;
         enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
-        enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
-        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
-        enemigos.push_back(std::make_unique<Spreadshot>(150.0f, 450.0f));
     }
 
     void ejecutar() {

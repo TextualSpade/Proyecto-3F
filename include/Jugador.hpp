@@ -9,7 +9,8 @@ private:
     sf::CircleShape forma;
     int vida;
     int vidaMaxima;
-    float tiempoInvulnerable;   // segundos restantes de inmunidad tras un golpe
+    float tiempoInvulnerable;
+    sf::Vector2f ultimaDireccion;
 
 public:
     Jugador(float x, float y);
@@ -23,6 +24,7 @@ public:
     bool esInvulnerable() const;
 
     sf::Vector2f getPosicion() const;
+    sf::Vector2f getUltimaDireccion() const;
     float getRadio() const;
     int getVida() const;
     int getVidaMaxima() const;

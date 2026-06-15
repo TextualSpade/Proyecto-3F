@@ -26,7 +26,7 @@ public:
     virtual sf::Color colorProyectil() const { return sf::Color(255, 140, 0); }
 
     void setObjetivo(sf::Vector2f posJugador);
-    void recibirDanio(int cantidad);
+    virtual void recibirDanio(int cantidad);
     bool estaMuerto() const;
 
     sf::Vector2f getPosicion() const;
