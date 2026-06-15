@@ -11,6 +11,8 @@ Animacion::Animacion() {
     frameHeight = 0;
     terminada = false;
     enLoop = false;
+    escalaX = 1.0f;
+    escalaBase = 1.0f;
 }
 
 bool Animacion::cargar(const std::string& ruta, int anchoFrame, int altoFrame) {
@@ -18,8 +20,19 @@ bool Animacion::cargar(const std::string& ruta, int anchoFrame, int altoFrame) {
     frameWidth = anchoFrame;
     frameHeight = altoFrame;
     sprite.emplace(textura);
+    sprite->setOrigin({frameWidth / 2.0f, frameHeight / 2.0f});
     sprite->setTextureRect(sf::IntRect({0, 0}, {frameWidth, frameHeight}));
     return true;
+}
+
+void Animacion::setEscalaBase(float escala) {
+    escalaBase = escala;
+    aplicarEscala();
+}
+
+void Animacion::aplicarEscala() {
+    if (sprite.has_value())
+        sprite->setScale({escalaX * escalaBase, escalaBase});
 }
 
 void Animacion::establecer(int fila, int numFrames, float velocidad, bool loop) {
@@ -66,6 +79,19 @@ void Animacion::dibujar(sf::RenderWindow& ventana) {
 
 void Animacion::setPosicion(sf::Vector2f pos) {
     if (sprite.has_value()) sprite->setPosition(pos);
+}
+
+void Animacion::setEscala(sf::Vector2f escala) {
+    escalaX = escala.x < 0.0f ? -1.0f : 1.0f;
+    aplicarEscala();
+}
+
+void Animacion::setFrameEspecifico(int fila, int frame) {
+    if (!sprite.has_value()) return;
+    filaActual = fila;
+    frameActual = frame;
+    terminada = false;
+    sprite->setTextureRect(sf::IntRect({frameActual * frameWidth, filaActual * frameHeight}, {frameWidth, frameHeight}));
 }
 
 bool Animacion::termino() const { return terminada; }
