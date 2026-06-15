@@ -32,11 +32,11 @@ static const ConfigPersonaje PERSONAJES[3] = {
     { "assets/images/personaje2_sheet1.png",
       "assets/images/personaje2_sheet2.png",
       "assets/images/personaje2_sword.png",
-      "Ing. en Sistemas" },
+      "Coming soon..." },
     { "assets/images/personaje3_sheet1.png",
       "assets/images/personaje3_sheet2.png",
       "assets/images/personaje3_sword.png",
-      "Ing. en Sistemas" },
+      "Coming soon..." },
 };
 
 static constexpr int   FRAME_W     = 302;
@@ -65,7 +65,7 @@ private:
         if (!hayFuente) hayFuente = fuente.openFromFile("assets/fonts/arial.ttf");
 
         sf::Texture texPersonajes[3];
-        sf::Sprite  sprPersonajes[3] = {
+        sf::Sprite sprPersonajes[3] = {
             sf::Sprite(texPersonajes[0]),
             sf::Sprite(texPersonajes[1]),
             sf::Sprite(texPersonajes[2])
@@ -83,7 +83,9 @@ private:
             }
         }
 
-        int seleccion = 0;
+        // Solo el personaje 1 está disponible por ahora.
+        // Los personajes 2 y 3 se muestran como bloqueados.
+        const int seleccion = 0;
 
         while (ventana.isOpen()) {
             while (const std::optional<sf::Event> evento = ventana.pollEvent()) {
@@ -91,13 +93,12 @@ private:
                     ventana.close();
                     return -1;
                 }
+
                 if (const auto* kp = evento->getIf<sf::Event::KeyPressed>()) {
-                    if (kp->code == sf::Keyboard::Key::Num1) return 0;
-                    if (kp->code == sf::Keyboard::Key::Num2) return 1;
-                    if (kp->code == sf::Keyboard::Key::Num3) return 2;
-                    if (kp->code == sf::Keyboard::Key::Left)  seleccion = (seleccion + 2) % 3;
-                    if (kp->code == sf::Keyboard::Key::Right) seleccion = (seleccion + 1) % 3;
-                    if (kp->code == sf::Keyboard::Key::Enter) return seleccion;
+                    if (kp->code == sf::Keyboard::Key::Num1 ||
+                        kp->code == sf::Keyboard::Key::Enter) {
+                        return 0;
+                    }
                 }
             }
 
@@ -121,34 +122,42 @@ private:
             for (int i = 0; i < 3; i++) {
                 float cx = 160.0f + i * 240.0f;
                 float cy = 280.0f;
+                bool disponible = (i == 0);
 
                 sf::RectangleShape caja({180.0f, 220.0f});
                 caja.setOrigin({90.0f, 110.0f});
                 caja.setPosition({cx, cy});
-                caja.setFillColor(i == seleccion
+                caja.setFillColor(disponible
                     ? sf::Color(60, 45, 15)
-                    : sf::Color(30, 25, 35));
+                    : sf::Color(25, 25, 30));
                 caja.setOutlineThickness(3.0f);
-                caja.setOutlineColor(i == seleccion
+                caja.setOutlineColor(disponible
                     ? sf::Color(210, 170, 50)
-                    : sf::Color(70, 60, 80));
+                    : sf::Color(80, 80, 85));
                 ventana.draw(caja);
 
-                sprPersonajes[i].setPosition({cx, cy - 10.0f});
+                sprPersonajes[i].setPosition({cx, cy - 15.0f});
+                sprPersonajes[i].setColor(disponible
+                    ? sf::Color::White
+                    : sf::Color(90, 90, 90, 150));
                 ventana.draw(sprPersonajes[i]);
 
                 if (hayFuente) {
-                    sf::Text nombre(fuente, PERSONAJES[i].nombre, 15);
-                    nombre.setFillColor(i == seleccion
+                    sf::Text nombre(fuente, PERSONAJES[i].nombre, disponible ? 15 : 18);
+                    nombre.setFillColor(disponible
                         ? sf::Color(210, 170, 50)
-                        : sf::Color(180, 160, 130));
+                        : sf::Color(160, 160, 160));
+                    nombre.setOutlineColor(sf::Color(20, 20, 20));
+                    nombre.setOutlineThickness(disponible ? 0.0f : 1.0f);
                     auto nb = nombre.getLocalBounds();
                     nombre.setOrigin({nb.size.x / 2.0f, 0.0f});
-                    nombre.setPosition({cx, cy + 120.0f});
+                    nombre.setPosition({cx, cy + 118.0f});
                     ventana.draw(nombre);
 
-                    sf::Text tecla(fuente, "[" + std::to_string(i + 1) + "]", 13);
-                    tecla.setFillColor(sf::Color(140, 120, 80));
+                    sf::Text tecla(fuente, disponible ? "[1]" : "Bloqueado", 13);
+                    tecla.setFillColor(disponible
+                        ? sf::Color(140, 120, 80)
+                        : sf::Color(100, 100, 100));
                     auto tk = tecla.getLocalBounds();
                     tecla.setOrigin({tk.size.x / 2.0f, 0.0f});
                     tecla.setPosition({cx, cy + 142.0f});
@@ -157,7 +166,7 @@ private:
             }
 
             if (hayFuente) {
-                sf::Text instruccion(fuente, "Flechas / Enter   o   teclas 1  2  3", 14);
+                sf::Text instruccion(fuente, "Presiona Enter o 1 para comenzar", 14);
                 instruccion.setFillColor(sf::Color(120, 110, 90));
                 auto ib = instruccion.getLocalBounds();
                 instruccion.setOrigin({ib.size.x / 2.0f, 0.0f});
@@ -167,6 +176,7 @@ private:
 
             ventana.display();
         }
+
         return 0;
     }
 
