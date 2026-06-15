@@ -38,8 +38,8 @@ void Spreadshot::teletransportar() {
     float x, y;
     int intentos = 0;
     do {
-        x = 60.0f + static_cast<float>(std::rand() % 680);
-        y = 60.0f + static_cast<float>(std::rand() % 480);
+        x = (40.0f + radio) + static_cast<float>(std::rand() % static_cast<int>(720.0f - 2.0f * radio));
+        y = (40.0f + radio) + static_cast<float>(std::rand() % static_cast<int>(520.0f - 2.0f * radio));
         intentos++;
     } while (std::sqrt((x-centroX)*(x-centroX) + (y-centroY)*(y-centroY)) < umbral && intentos < 20);
 

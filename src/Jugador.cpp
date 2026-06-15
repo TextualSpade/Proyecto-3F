@@ -159,16 +159,10 @@ void Jugador::actualizar(float dt) {
         posicion += movimiento * velocidad * dt;
     }
 
-    const float OFFSET_Y   = 10.0f;
-    const float MARGEN_IZQ = 40.0f + radio;
-    const float MARGEN_DER = 760.0f - radio;
-    const float MARGEN_ARR = 40.0f + radio + OFFSET_Y;
-    const float MARGEN_ABA = 560.0f - radio + OFFSET_Y;
-
-    if (posicion.x < MARGEN_IZQ) posicion.x = MARGEN_IZQ;
-    if (posicion.x > MARGEN_DER) posicion.x = MARGEN_DER;
-    if (posicion.y < MARGEN_ARR) posicion.y = MARGEN_ARR;
-    if (posicion.y > MARGEN_ABA) posicion.y = MARGEN_ABA;
+    if (posicion.x < 40.0f + radio)  posicion.x = 40.0f + radio;
+    if (posicion.x > 760.0f - radio) posicion.x = 760.0f - radio;
+    if (posicion.y < 40.0f + radio)  posicion.y = 40.0f + radio;
+    if (posicion.y > 560.0f - radio) posicion.y = 560.0f - radio;
 
     if (tiempoInvulnerable > 0.0f) tiempoInvulnerable -= dt;
 
