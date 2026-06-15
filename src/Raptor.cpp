@@ -51,7 +51,7 @@ void Raptor::actualizar(float dt) {
     if (estadoAnim == EstadoAnim::Death) {
         animacion.actualizar(dt);
         if (animacion.termino()) animMuerteTerminada = true;
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         return;
     }
 
@@ -68,7 +68,7 @@ void Raptor::actualizar(float dt) {
     if (estadoAnim == EstadoAnim::Hurt) {
         animacion.actualizar(dt);
         if (animacion.termino()) cambiarEstado(EstadoAnim::Walk);
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -80,7 +80,7 @@ void Raptor::actualizar(float dt) {
             cronometro = 0.0f;
             cambiarEstado(EstadoAnim::Walk);
         }
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -110,7 +110,7 @@ void Raptor::actualizar(float dt) {
     }
 
     cambiarEstado(EstadoAnim::Walk);
-    animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+    animacion.setPosicion(posicion);
     animacion.actualizar(dt);
     forma.setPosition(posicion);
 }

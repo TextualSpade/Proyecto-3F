@@ -54,7 +54,7 @@ void ProyectilSpreadshot::actualizar(float dt) {
         }
     }
 
-    animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+    animacion.setPosicion(posicion);
 }
 
 void ProyectilSpreadshot::dibujar(sf::RenderWindow& ventana) {

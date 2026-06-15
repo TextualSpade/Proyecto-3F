@@ -40,7 +40,7 @@ void Blob::actualizar(float dt) {
     if (estadoAnim == EstadoAnim::Death) {
         animacion.actualizar(dt);
         if (animacion.termino()) animMuerteTerminada = true;
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         return;
     }
 
@@ -60,7 +60,7 @@ void Blob::actualizar(float dt) {
             cambiarEstado(EstadoAnim::Reposo);
             cronometroParada = tiempoParada;
         }
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -69,7 +69,7 @@ void Blob::actualizar(float dt) {
         cronometroParada -= dt;
         if (cronometroParada <= 0.0f) cambiarEstado(EstadoAnim::Walk);
         animacion.actualizar(dt);
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -77,7 +77,7 @@ void Blob::actualizar(float dt) {
     if (estadoAnim == EstadoAnim::Hurt) {
         animacion.actualizar(dt);
         if (animacion.termino()) cambiarEstado(EstadoAnim::Walk);
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -94,7 +94,7 @@ void Blob::actualizar(float dt) {
     if (posicion.y < 40.0f + FRAME_H / 2.0f) posicion.y = 40.0f + FRAME_H / 2.0f;
     if (posicion.y > 560.0f - FRAME_H / 2.0f) posicion.y = 560.0f - FRAME_H / 2.0f;
 
-    animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+    animacion.setPosicion(posicion);
     animacion.actualizar(dt);
     forma.setPosition(posicion);
 }

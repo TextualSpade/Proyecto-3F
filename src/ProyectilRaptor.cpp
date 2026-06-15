@@ -30,7 +30,7 @@ void ProyectilRaptor::actualizar(float dt) {
     }
 
     posicion += direccion * velocidad * dt;
-    animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+    animacion.setPosicion(posicion);
 
     if (posicion.x < 40.0f || posicion.x > 760.0f ||
         posicion.y < 40.0f || posicion.y > 560.0f) {

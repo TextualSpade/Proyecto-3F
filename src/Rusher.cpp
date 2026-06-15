@@ -52,7 +52,7 @@ void Rusher::actualizar(float dt) {
     if (estado == Estado::Death) {
         animacion.actualizar(dt);
         if (animacion.termino()) animMuerteTerminada = true;
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         return;
     }
 
@@ -69,7 +69,7 @@ void Rusher::actualizar(float dt) {
     if (estado == Estado::Hurt) {
         animacion.actualizar(dt);
         if (animacion.termino()) cambiarEstado(Estado::Apuntando);
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -77,7 +77,7 @@ void Rusher::actualizar(float dt) {
     if (estado == Estado::Golpeando) {
         animacion.actualizar(dt);
         if (animacion.termino()) cambiarEstado(Estado::Aturdido);
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -100,7 +100,7 @@ void Rusher::actualizar(float dt) {
             cambiarEstado(Estado::Cargando);
         }
         animacion.actualizar(dt);
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -111,7 +111,7 @@ void Rusher::actualizar(float dt) {
             cambiarEstado(Estado::Embistiendo);
         }
         animacion.actualizar(dt);
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -129,7 +129,7 @@ void Rusher::actualizar(float dt) {
 
         if (choque) cambiarEstado(Estado::Aturdido);
 
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -138,7 +138,7 @@ void Rusher::actualizar(float dt) {
         cronometro += dt;
         if (cronometro >= tiempoAturdido) cambiarEstado(Estado::Apuntando);
         animacion.actualizar(dt);
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }

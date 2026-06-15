@@ -190,7 +190,7 @@ private:
 
         if (disparoPresionado) {
             proyectilesJugador.emplace_back(
-                isaac->getPosicion(), dirDisparo,
+                isaac->getCentroDisparo(), dirDisparo,
                 isaac->getRutaProyectil());
             relojDisparo.restart();
         }
@@ -224,6 +224,16 @@ private:
         return (dx * dx + dy * dy) < (sr * sr);
     }
 
+    void dibujarCirculoDebug(sf::Vector2f centro, float radio, sf::Color color) {
+        sf::CircleShape circulo(radio);
+        circulo.setOrigin({radio, radio});
+        circulo.setPosition(centro);
+        circulo.setFillColor(sf::Color::Transparent);
+        circulo.setOutlineColor(color);
+        circulo.setOutlineThickness(2.0f);
+        ventana.draw(circulo);
+    }
+
     void manejarColisiones() {
         for (auto& proy : proyectilesJugador) {
             for (auto& enemigo : enemigos) {
@@ -239,7 +249,7 @@ private:
         for (auto& enemigo : enemigos) {
             if (!enemigo->estaMuerto() &&
                 colisionan(enemigo->getPosicion(), enemigo->getRadio(),
-                           isaac->getPosicion(), isaac->getRadio())) {
+                           isaac->getCentroHitbox(), isaac->getRadio())) {
                 isaac->recibirDanio(1);
                 if (auto* blob = dynamic_cast<Blob*>(enemigo.get())) blob->tocarJugador();
                 if (auto* rusher = dynamic_cast<Rusher*>(enemigo.get())) rusher->golpearJugador();
@@ -249,7 +259,7 @@ private:
         for (auto& lagrima : lagrimasEnemigas) {
             if (!lagrima.estaDestruida() &&
                 colisionan(lagrima.getPosicion(), lagrima.getRadio(),
-                           isaac->getPosicion(), isaac->getRadio())) {
+                           isaac->getCentroHitbox(), isaac->getRadio())) {
                 isaac->recibirDanio(1);
                 lagrima.destruir();
             }
@@ -258,7 +268,7 @@ private:
         for (auto& proy : proyectilesRaptor) {
             if (!proy->estaDestruido() &&
                 colisionan(proy->getPosicion(), proy->getRadio(),
-                           isaac->getPosicion(), isaac->getRadio())) {
+                           isaac->getCentroHitbox(), isaac->getRadio())) {
                 isaac->recibirDanio(1);
                 proy->golpear();
             }
@@ -267,7 +277,7 @@ private:
         for (auto& proy : proyectilesSpreadshot) {
             if (!proy->estaDestruido() &&
                 colisionan(proy->getPosicion(), proy->getRadio(),
-                           isaac->getPosicion(), isaac->getRadio())) {
+                           isaac->getCentroHitbox(), isaac->getRadio())) {
                 isaac->recibirDanio(1);
                 proy->golpear();
             }
@@ -300,7 +310,7 @@ private:
         manejarDisparos();
 
         for (auto& enemigo : enemigos) {
-            enemigo->setObjetivo(isaac->getPosicion());
+            enemigo->setObjetivo(isaac->getCentroHitbox());
             enemigo->actualizar(dt);
         }
 
@@ -365,6 +375,27 @@ private:
         for (auto& lagrima : lagrimasEnemigas) lagrima.dibujar(ventana);
         for (auto& proy : proyectilesRaptor) proy->dibujar(ventana);
         for (auto& proy : proyectilesSpreadshot) proy->dibujar(ventana);
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::H)) {
+            isaac->dibujarHitbox(ventana);
+
+            for (auto& enemigo : enemigos) {
+                dibujarCirculoDebug(enemigo->getPosicion(), enemigo->getRadio(), sf::Color::Yellow);
+            }
+
+            for (auto& lagrima : lagrimasEnemigas) {
+                dibujarCirculoDebug(lagrima.getPosicion(), lagrima.getRadio(), sf::Color::Cyan);
+            }
+
+            for (auto& proy : proyectilesRaptor) {
+                dibujarCirculoDebug(proy->getPosicion(), proy->getRadio(), sf::Color::Magenta);
+            }
+
+            for (auto& proy : proyectilesSpreadshot) {
+                dibujarCirculoDebug(proy->getPosicion(), proy->getRadio(), sf::Color::Green);
+            }
+        }
+
         dibujarHUD();
         ventana.display();
     }

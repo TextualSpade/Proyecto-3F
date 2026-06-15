@@ -75,7 +75,7 @@ void Spreadshot::actualizar(float dt) {
     if (estado == Estado::Death) {
         animacion.actualizar(dt);
         if (animacion.termino()) animMuerteTerminada = true;
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         return;
     }
 
@@ -92,14 +92,14 @@ void Spreadshot::actualizar(float dt) {
             cronometro = 0.0f;
             cambiarEstado(Estado::Idle);
         }
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         return;
     }
 
     if (estado == Estado::Hurt) {
         animacion.actualizar(dt);
         if (animacion.termino()) cambiarEstado(Estado::Teleportando);
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -110,7 +110,7 @@ void Spreadshot::actualizar(float dt) {
             listoParaDisparar = true;
             cambiarEstado(Estado::Teleportando);
         }
-        animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+        animacion.setPosicion(posicion);
         forma.setPosition(posicion);
         return;
     }
@@ -129,7 +129,7 @@ void Spreadshot::actualizar(float dt) {
     }
 
     animacion.actualizar(dt);
-    animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
+    animacion.setPosicion(posicion);
     forma.setPosition(posicion);
 }
 

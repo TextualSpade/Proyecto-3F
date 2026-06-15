@@ -10,8 +10,9 @@ static constexpr float VEL_SLASH   = 0.05f;
 static constexpr float VEL_HURT    = 0.06f;
 static constexpr float VEL_DYING   = 0.07f;
 
-static constexpr float MARGEN_X = FW * ESCALA / 2.0f;
-static constexpr float MARGEN_Y = FH * ESCALA / 2.0f;
+// Estas dos posiciones se separan para que no se mezclen sprite, golpe y disparo.
+static constexpr sf::Vector2f OFFSET_HITBOX  = {0.0f, 8.0f};
+static constexpr sf::Vector2f OFFSET_DISPARO = {0.0f, -20.0f};
 
 Jugador::Jugador(float x, float y,
                  const std::string& sheet1,
@@ -41,6 +42,7 @@ Jugador::Jugador(float x, float y,
 
     animSheet1.establecerRango(0, 0, 10, VEL_IDLE, true);
     animSheet1.setPosicion(posicion);
+    aplicarFlip();
 }
 
 void Jugador::aplicarFlip() {
@@ -162,10 +164,14 @@ void Jugador::actualizar(float dt) {
         posicion += movimiento * velocidad * dt;
     }
 
-    if (posicion.x < 40.0f + MARGEN_X) posicion.x = 40.0f + MARGEN_X;
-    if (posicion.x > 760.0f - MARGEN_X) posicion.x = 760.0f - MARGEN_X;
-    if (posicion.y < 40.0f + MARGEN_Y) posicion.y = 40.0f + MARGEN_Y;
-    if (posicion.y > 560.0f - MARGEN_Y) posicion.y = 560.0f - MARGEN_Y;
+    // Límites usando la hitbox real, no el frame completo del spritesheet.
+    sf::Vector2f centro = getCentroHitbox();
+    if (centro.x < 40.0f + radio)  posicion.x += (40.0f + radio) - centro.x;
+    if (centro.x > 760.0f - radio) posicion.x += (760.0f - radio) - centro.x;
+
+    centro = getCentroHitbox();
+    if (centro.y < 40.0f + radio)  posicion.y += (40.0f + radio) - centro.y;
+    if (centro.y > 560.0f - radio) posicion.y += (560.0f - radio) - centro.y;
 
     if (tiempoInvulnerable > 0.0f) tiempoInvulnerable -= dt;
 
@@ -192,6 +198,16 @@ void Jugador::dibujar(sf::RenderWindow& ventana) {
     } else {
         animSheet1.dibujar(ventana);
     }
+}
+
+void Jugador::dibujarHitbox(sf::RenderWindow& ventana) const {
+    sf::CircleShape hitbox(radio);
+    hitbox.setOrigin({radio, radio});
+    hitbox.setPosition(getCentroHitbox());
+    hitbox.setFillColor(sf::Color::Transparent);
+    hitbox.setOutlineColor(sf::Color::Red);
+    hitbox.setOutlineThickness(2.0f);
+    ventana.draw(hitbox);
 }
 
 void Jugador::recibirDanio(int cantidad) {
@@ -226,10 +242,12 @@ bool Jugador::estaVivo()       const { return vida > 0; }
 bool Jugador::esInvulnerable() const { return tiempoInvulnerable > 0.0f; }
 bool Jugador::estaDisparable() const { return estadoActual != Estado::Dying; }
 
-sf::Vector2f       Jugador::getPosicion()        const { return posicion; }
-sf::Vector2f       Jugador::getUltimaDireccion() const { return ultimaDireccion; }
-float              Jugador::getRadio()           const { return radio; }
-int                Jugador::getVida()            const { return vida; }
-int                Jugador::getVidaMaxima()      const { return vidaMaxima; }
-const std::string& Jugador::getRutaProyectil()   const { return rutaProyectil; }
-const std::string& Jugador::getRutaSheet1()      const { return rutaSheet1; }
+sf::Vector2f Jugador::getPosicion() const { return posicion; }
+sf::Vector2f Jugador::getCentroHitbox() const { return posicion + OFFSET_HITBOX; }
+sf::Vector2f Jugador::getCentroDisparo() const { return posicion + OFFSET_DISPARO; }
+sf::Vector2f Jugador::getUltimaDireccion() const { return ultimaDireccion; }
+float Jugador::getRadio() const { return radio; }
+int Jugador::getVida() const { return vida; }
+int Jugador::getVidaMaxima() const { return vidaMaxima; }
+const std::string& Jugador::getRutaProyectil() const { return rutaProyectil; }
+const std::string& Jugador::getRutaSheet1() const { return rutaSheet1; }

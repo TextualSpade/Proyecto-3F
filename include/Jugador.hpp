@@ -41,6 +41,7 @@ public:
 
     void actualizar(float dt);
     void dibujar(sf::RenderWindow& ventana);
+    void dibujarHitbox(sf::RenderWindow& ventana) const;
 
     void recibirDanio(int cantidad);
     void reiniciar(float x, float y);
@@ -49,6 +50,8 @@ public:
     bool estaDisparable() const;
 
     sf::Vector2f getPosicion() const;
+    sf::Vector2f getCentroHitbox() const;
+    sf::Vector2f getCentroDisparo() const;
     sf::Vector2f getUltimaDireccion() const;
     float getRadio() const;
     int getVida() const;
