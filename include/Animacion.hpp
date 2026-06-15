@@ -9,6 +9,7 @@ private:
     std::optional<sf::Sprite> sprite;
 
     int frameActual;
+    int frameInicio;
     int totalFrames;
     float tiempoEntreFrames;
     float cronometro;
@@ -24,9 +25,9 @@ public:
 
     bool cargar(const std::string& ruta, int anchoFrame, int altoFrame);
     void establecer(int fila, int numFrames, float velocidad, bool loop = false);
+    void establecerRango(int fila, int frameInicio, int numFrames, float velocidad, bool loop = false);
     void actualizar(float dt);
     void dibujar(sf::RenderWindow& ventana);
     void setPosicion(sf::Vector2f pos);
     bool termino() const;
-    void refrescar();
 };

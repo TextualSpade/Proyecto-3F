@@ -2,6 +2,7 @@
 
 Animacion::Animacion() {
     frameActual = 0;
+    frameInicio = 0;
     totalFrames = 1;
     tiempoEntreFrames = 0.1f;
     cronometro = 0.0f;
@@ -22,15 +23,20 @@ bool Animacion::cargar(const std::string& ruta, int anchoFrame, int altoFrame) {
 }
 
 void Animacion::establecer(int fila, int numFrames, float velocidad, bool loop) {
+    establecerRango(fila, 0, numFrames, velocidad, loop);
+}
+
+void Animacion::establecerRango(int fila, int inicio, int numFrames, float velocidad, bool loop) {
     if (!sprite.has_value()) return;
     filaActual = fila;
+    frameInicio = inicio;
     totalFrames = numFrames;
     tiempoEntreFrames = velocidad;
-    frameActual = 0;
+    frameActual = inicio;
     cronometro = 0.0f;
     terminada = false;
     enLoop = loop;
-    sprite->setTextureRect(sf::IntRect({0, filaActual * frameHeight}, {frameWidth, frameHeight}));
+    sprite->setTextureRect(sf::IntRect({frameActual * frameWidth, filaActual * frameHeight}, {frameWidth, frameHeight}));
 }
 
 void Animacion::actualizar(float dt) {
@@ -38,11 +44,11 @@ void Animacion::actualizar(float dt) {
     cronometro += dt;
     if (cronometro >= tiempoEntreFrames) {
         cronometro = 0.0f;
-        if (frameActual < totalFrames - 1) {
+        if (frameActual < frameInicio + totalFrames - 1) {
             frameActual++;
         } else {
             if (enLoop) {
-                frameActual = 0;
+                frameActual = frameInicio;
             } else {
                 terminada = true;
             }
@@ -63,12 +69,3 @@ void Animacion::setPosicion(sf::Vector2f pos) {
 }
 
 bool Animacion::termino() const { return terminada; }
-
-void Animacion::refrescar() {
-    if (frameWidth == 0) return;
-    sprite.emplace(textura);
-    sprite->setTextureRect(sf::IntRect(
-        {frameActual * frameWidth, filaActual * frameHeight},
-        {frameWidth, frameHeight}
-    ));
-}

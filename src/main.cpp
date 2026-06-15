@@ -93,6 +93,9 @@ private:
                 if (auto* blob = dynamic_cast<Blob*>(enemigo.get())) {
                     blob->tocarJugador();
                 }
+                if (auto* rusher = dynamic_cast<Rusher*>(enemigo.get())) {
+                    rusher->golpearJugador();
+                }
             }
         }
 
@@ -134,7 +137,7 @@ private:
         proyectilesRaptor.clear();
         enemigos.clear();
         isaac->reiniciar(400.0f, 300.0f);
-        enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
     }
 
     void actualizar(float dt) {
@@ -174,6 +177,8 @@ private:
                 eliminar = blob->listo_para_eliminar();
             } else if (auto* raptor = dynamic_cast<Raptor*>(enemigos[i].get())) {
                 eliminar = raptor->listo_para_eliminar();
+            } else if (auto* rusher = dynamic_cast<Rusher*>(enemigos[i].get())) {
+                eliminar = rusher->listo_para_eliminar();
             } else {
                 eliminar = enemigos[i]->estaMuerto();
             }
@@ -207,7 +212,7 @@ public:
         std::srand(static_cast<unsigned>(std::time(nullptr)));
         isaac = std::make_unique<Jugador>(400.0f, 300.0f);
         tiempoEntreDisparos = 0.3f;
-        enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
     }
 
     void ejecutar() {
