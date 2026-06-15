@@ -152,7 +152,10 @@ private:
         proyectilesSpreadshot.clear();
         enemigos.clear();
         isaac->reiniciar(400.0f, 300.0f);
-        enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 300.0f));
+        enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
+        enemigos.push_back(std::make_unique<Spreadshot>(150.0f, 450.0f));
     }
 
     void actualizar(float dt) {
@@ -236,7 +239,10 @@ public:
         std::srand(static_cast<unsigned>(std::time(nullptr)));
         isaac = std::make_unique<Jugador>(400.0f, 300.0f);
         tiempoEntreDisparos = 0.3f;
-        enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 300.0f));
+        enemigos.push_back(std::make_unique<Blob>(150.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Raptor>(650.0f, 150.0f));
+        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
+        enemigos.push_back(std::make_unique<Spreadshot>(150.0f, 450.0f));
     }
 
     void ejecutar() {
