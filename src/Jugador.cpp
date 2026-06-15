@@ -21,6 +21,7 @@ Jugador::Jugador(float x, float y,
 {
     posicion           = {x, y};
     velocidad          = 300.0f;
+    multiplicadorVelocidad = 1.0f;
     radio              = 18.0f;
     vidaMaxima         = 3;
     vida               = vidaMaxima;
@@ -161,7 +162,7 @@ void Jugador::actualizar(float dt) {
             }
         }
         ultimaDireccion = movimiento;
-        posicion += movimiento * velocidad * dt;
+        posicion += movimiento * velocidad * multiplicadorVelocidad * dt;
     }
 
     // Límites usando la hitbox real, no el frame completo del spritesheet.
@@ -224,6 +225,7 @@ void Jugador::recibirDanio(int cantidad) {
 
 void Jugador::reiniciar(float x, float y) {
     posicion           = {x, y};
+    multiplicadorVelocidad = 1.0f;
     vida               = vidaMaxima;
     tiempoInvulnerable = 0.0f;
     ultimaDireccion    = {1.0f, 0.0f};
@@ -236,6 +238,26 @@ void Jugador::reiniciar(float x, float y) {
     animSheet1.establecerRango(0, 0, 10, VEL_IDLE, true);
     animSheet1.setPosicion(posicion);
     aplicarFlip();
+}
+
+void Jugador::setPosicion(float x, float y) {
+    posicion = {x, y};
+    animSheet1.setPosicion(posicion);
+    animSheet2.setPosicion(posicion);
+}
+
+void Jugador::setMultiplicadorVelocidad(float multiplicador) {
+    if (multiplicador < 1.0f) {
+        multiplicador = 1.0f;
+    }
+    multiplicadorVelocidad = multiplicador;
+}
+
+void Jugador::sanar(int cantidad) {
+    vida += cantidad;
+    if (vida > vidaMaxima) {
+        vida = vidaMaxima;
+    }
 }
 
 bool Jugador::estaVivo()       const { return vida > 0; }

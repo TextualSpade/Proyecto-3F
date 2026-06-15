@@ -10,6 +10,7 @@ public:
 private:
     sf::Vector2f posicion;
     float velocidad;
+    float multiplicadorVelocidad;
     float radio;
     int vida;
     int vidaMaxima;
@@ -45,6 +46,9 @@ public:
 
     void recibirDanio(int cantidad);
     void reiniciar(float x, float y);
+    void setPosicion(float x, float y);
+    void setMultiplicadorVelocidad(float multiplicador);
+    void sanar(int cantidad);
     bool estaVivo() const;
     bool esInvulnerable() const;
     bool estaDisparable() const;

@@ -7,6 +7,8 @@
 #include <ctime>
 #include <cmath>
 #include <string>
+#include <algorithm>
+#include <array>
 #include "Jugador.hpp"
 #include "ProyectilJugador.hpp"
 #include "Lagrima.hpp"
@@ -66,6 +68,17 @@ struct DatosSala {
     sf::Color colorMapa = sf::Color(70, 70, 70);
 };
 
+enum class TipoObjeto {
+    Corazon,
+    Estrella,
+    Rayo
+};
+
+struct ObjetoSuelo {
+    TipoObjeto tipo;
+    sf::Vector2f posicion;
+};
+
 static constexpr float LIMITE_IZQ = 40.0f;
 static constexpr float LIMITE_DER = 760.0f;
 static constexpr float LIMITE_ARR = 40.0f;
@@ -80,17 +93,28 @@ private:
     sf::RenderWindow ventana;
     sf::Texture texturaCorazon;
     sf::Texture texturaLlave;
+    sf::Texture texturaObjetoCorazon;
+    sf::Texture texturaObjetoEstrella;
+    sf::Texture texturaObjetoRayo;
     bool hayTexturaCorazon;
     bool hayTexturaLlave;
+    bool hayTexturaObjetoCorazon;
+    bool hayTexturaObjetoEstrella;
+    bool hayTexturaObjetoRayo;
     std::unique_ptr<Jugador> isaac;
     std::deque<ProyectilJugador> proyectilesJugador;
     std::vector<Lagrima> lagrimasEnemigas;
     std::vector<std::unique_ptr<ProyectilRaptor>> proyectilesRaptor;
     std::vector<std::unique_ptr<ProyectilSpreadshot>> proyectilesSpreadshot;
     std::vector<std::unique_ptr<Enemigo>> enemigos;
+    std::vector<ObjetoSuelo> objetosSuelo;
     sf::Clock reloj;
     sf::Clock relojDisparo;
     float tiempoEntreDisparos;
+    int stacksVelocidad;
+    int stacksEstrella;
+    float tiempoVelocidad;
+    float tiempoEstrella;
     int personajeElegido;
     std::vector<DatosSala> salas;
     int salaActual;
@@ -247,6 +271,21 @@ private:
         }
     }
 
+    sf::Vector2f direccionRotada(sf::Vector2f direccion, float radianes) const {
+        float c = std::cos(radianes);
+        float sen = std::sin(radianes);
+        sf::Vector2f resultado{
+            direccion.x * c - direccion.y * sen,
+            direccion.x * sen + direccion.y * c
+        };
+
+        float longitud = std::sqrt(resultado.x * resultado.x + resultado.y * resultado.y);
+        if (longitud > 0.0f) {
+            resultado /= longitud;
+        }
+        return resultado;
+    }
+
     void manejarDisparos() {
         if (!isaac->estaDisparable()) return;
         if (relojDisparo.getElapsedTime().asSeconds() < tiempoEntreDisparos) return;
@@ -260,9 +299,24 @@ private:
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::L)) { dirDisparo = {1.0f,  0.0f}; disparoPresionado = true; }
 
         if (disparoPresionado) {
-            proyectilesJugador.emplace_back(
-                isaac->getCentroDisparo(), dirDisparo,
-                isaac->getRutaProyectil());
+            int paresExtra = std::min(stacksEstrella, 3);
+
+            if (paresExtra <= 0) {
+                proyectilesJugador.emplace_back(
+                    isaac->getCentroDisparo(), dirDisparo,
+                    isaac->getRutaProyectil());
+            } else {
+                // Estrella: dispara en un cono cerrado.
+                // 1 stack = 3 proyectiles, 2 stacks = 5, 3+ stacks = 7.
+                const float separacion = 0.10f;
+                for (int i = -paresExtra; i <= paresExtra; i++) {
+                    sf::Vector2f dir = direccionRotada(dirDisparo, separacion * static_cast<float>(i));
+                    proyectilesJugador.emplace_back(
+                        isaac->getCentroDisparo(), dir,
+                        isaac->getRutaProyectil());
+                }
+            }
+
             relojDisparo.restart();
         }
     }
@@ -303,6 +357,105 @@ private:
         circulo.setOutlineColor(color);
         circulo.setOutlineThickness(2.0f);
         ventana.draw(circulo);
+    }
+
+    float probabilidadDropEnemigo(Enemigo* enemigo) const {
+        if (dynamic_cast<Blob*>(enemigo)) return 0.25f;
+        if (dynamic_cast<Raptor*>(enemigo)) return 0.35f;
+        if (dynamic_cast<Rusher*>(enemigo)) return 0.50f;
+        if (dynamic_cast<Spreadshot*>(enemigo)) return 0.50f;
+        return 0.0f;
+    }
+
+    void intentarSoltarObjeto(Enemigo* enemigo) {
+        if (!enemigo) return;
+
+        float probabilidad = probabilidadDropEnemigo(enemigo);
+        float tiro = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+        if (tiro > probabilidad) {
+            return;
+        }
+
+        int tipo = std::rand() % 100;
+        TipoObjeto objeto = TipoObjeto::Corazon;
+
+        if (tipo < 40) {
+            objeto = TipoObjeto::Corazon;      // 40%
+        } else if (tipo < 65) {
+            objeto = TipoObjeto::Estrella;    // 25%
+        } else if (tipo < 90) {
+            objeto = TipoObjeto::Rayo;        // 25%
+        } else {
+            // 10% reservado para el cuarto objeto que definiremos después.
+            return;
+        }
+
+        objetosSuelo.push_back({objeto, enemigo->getPosicion()});
+    }
+
+    sf::Texture* texturaParaObjeto(TipoObjeto tipo) {
+        switch (tipo) {
+            case TipoObjeto::Corazon:
+                return hayTexturaObjetoCorazon ? &texturaObjetoCorazon : nullptr;
+            case TipoObjeto::Estrella:
+                return hayTexturaObjetoEstrella ? &texturaObjetoEstrella : nullptr;
+            case TipoObjeto::Rayo:
+                return hayTexturaObjetoRayo ? &texturaObjetoRayo : nullptr;
+        }
+        return nullptr;
+    }
+
+    void aplicarObjeto(TipoObjeto tipo) {
+        switch (tipo) {
+            case TipoObjeto::Corazon:
+                isaac->sanar(1);
+                mostrarMensaje("Corazon +1", 1.8f);
+                break;
+
+            case TipoObjeto::Rayo:
+                stacksVelocidad++;
+                tiempoVelocidad += 30.0f;
+                isaac->setMultiplicadorVelocidad(1.0f + 0.5f * static_cast<float>(stacksVelocidad));
+                mostrarMensaje("Velocidad aumentada", 2.2f);
+                break;
+
+            case TipoObjeto::Estrella:
+                stacksEstrella++;
+                tiempoEstrella += 15.0f;
+                mostrarMensaje("Disparo triple activado", 2.2f);
+                break;
+        }
+    }
+
+    void actualizarBuffs(float dt) {
+        if (tiempoVelocidad > 0.0f) {
+            tiempoVelocidad -= dt;
+            if (tiempoVelocidad <= 0.0f) {
+                tiempoVelocidad = 0.0f;
+                stacksVelocidad = 0;
+                isaac->setMultiplicadorVelocidad(1.0f);
+            }
+        }
+
+        if (tiempoEstrella > 0.0f) {
+            tiempoEstrella -= dt;
+            if (tiempoEstrella <= 0.0f) {
+                tiempoEstrella = 0.0f;
+                stacksEstrella = 0;
+            }
+        }
+    }
+
+    void actualizarObjetosSuelo() {
+        for (size_t i = 0; i < objetosSuelo.size(); ) {
+            if (colisionan(isaac->getCentroHitbox(), isaac->getRadio(),
+                           objetosSuelo[i].posicion, 18.0f)) {
+                aplicarObjeto(objetosSuelo[i].tipo);
+                objetosSuelo.erase(objetosSuelo.begin() + i);
+            } else {
+                i++;
+            }
+        }
     }
 
     void manejarColisiones() {
@@ -461,6 +614,66 @@ private:
         proyectilesRaptor.clear();
         proyectilesSpreadshot.clear();
         enemigos.clear();
+        objetosSuelo.clear();
+    }
+
+    std::vector<sf::Vector2f> posicionesSpawnSeguras(int cantidad) {
+        std::vector<sf::Vector2f> candidatos = {
+            {170.0f, 170.0f}, {400.0f, 165.0f}, {630.0f, 170.0f},
+            {165.0f, 300.0f},                   {635.0f, 300.0f},
+            {170.0f, 435.0f}, {400.0f, 435.0f}, {630.0f, 435.0f},
+            {285.0f, 250.0f}, {515.0f, 250.0f},
+            {285.0f, 370.0f}, {515.0f, 370.0f}
+        };
+
+        sf::Vector2f jugador = isaac ? isaac->getCentroHitbox() : sf::Vector2f{CENTRO_X, CENTRO_Y};
+        std::sort(candidatos.begin(), candidatos.end(),
+            [jugador](sf::Vector2f a, sf::Vector2f b) {
+                float da = (a.x - jugador.x) * (a.x - jugador.x) +
+                           (a.y - jugador.y) * (a.y - jugador.y);
+                float db = (b.x - jugador.x) * (b.x - jugador.x) +
+                           (b.y - jugador.y) * (b.y - jugador.y);
+                return da > db;
+            });
+
+        if (cantidad < static_cast<int>(candidatos.size())) {
+            candidatos.resize(cantidad);
+        }
+
+        return candidatos;
+    }
+
+    enum class TipoEnemigoSpawn {
+        Blob,
+        Raptor,
+        Rusher,
+        Spreadshot
+    };
+
+    void agregarEnemigo(TipoEnemigoSpawn tipo, sf::Vector2f pos) {
+        switch (tipo) {
+            case TipoEnemigoSpawn::Blob:
+                enemigos.push_back(std::make_unique<Blob>(pos.x, pos.y));
+                break;
+            case TipoEnemigoSpawn::Raptor:
+                enemigos.push_back(std::make_unique<Raptor>(pos.x, pos.y));
+                break;
+            case TipoEnemigoSpawn::Rusher:
+                enemigos.push_back(std::make_unique<Rusher>(pos.x, pos.y));
+                break;
+            case TipoEnemigoSpawn::Spreadshot:
+                enemigos.push_back(std::make_unique<Spreadshot>(pos.x, pos.y));
+                break;
+        }
+    }
+
+    void spawnearGrupo(const std::vector<TipoEnemigoSpawn>& tipos) {
+        std::vector<sf::Vector2f> posiciones = posicionesSpawnSeguras(static_cast<int>(tipos.size()));
+
+        for (size_t i = 0; i < tipos.size(); i++) {
+            sf::Vector2f pos = posiciones[i % posiciones.size()];
+            agregarEnemigo(tipos[i], pos);
+        }
     }
 
     void cargarEnemigosSala() {
@@ -470,84 +683,48 @@ private:
             return;
         }
 
+        using T = TipoEnemigoSpawn;
+
         switch (salaActual) {
             case SALA_A:
                 // A = room_white. Sala inicial vacía.
                 break;
 
             case SALA_B:
-                // B = room_pink. 4 blobs.
-                enemigos.push_back(std::make_unique<Blob>(220.0f, 220.0f));
-                enemigos.push_back(std::make_unique<Blob>(580.0f, 220.0f));
-                enemigos.push_back(std::make_unique<Blob>(220.0f, 420.0f));
-                enemigos.push_back(std::make_unique<Blob>(580.0f, 420.0f));
+                spawnearGrupo({T::Blob, T::Blob, T::Blob, T::Blob});
                 break;
 
             case SALA_C:
-                // C = room_orange. 4 blobs y 2 raptors.
-                enemigos.push_back(std::make_unique<Blob>(210.0f, 210.0f));
-                enemigos.push_back(std::make_unique<Blob>(590.0f, 210.0f));
-                enemigos.push_back(std::make_unique<Blob>(210.0f, 430.0f));
-                enemigos.push_back(std::make_unique<Blob>(590.0f, 430.0f));
-                enemigos.push_back(std::make_unique<Raptor>(330.0f, 300.0f));
-                enemigos.push_back(std::make_unique<Raptor>(470.0f, 300.0f));
+                spawnearGrupo({T::Blob, T::Blob, T::Blob, T::Blob, T::Raptor, T::Raptor});
                 break;
 
             case SALA_D:
-                // D = room_red. 4 rushers.
-                enemigos.push_back(std::make_unique<Rusher>(220.0f, 220.0f));
-                enemigos.push_back(std::make_unique<Rusher>(580.0f, 220.0f));
-                enemigos.push_back(std::make_unique<Rusher>(220.0f, 420.0f));
-                enemigos.push_back(std::make_unique<Rusher>(580.0f, 420.0f));
+                spawnearGrupo({T::Rusher, T::Rusher, T::Rusher, T::Rusher});
                 break;
 
             case SALA_E:
-                // E = room_green. 2 raptors, 1 spreadshot y 2 blobs.
-                enemigos.push_back(std::make_unique<Raptor>(220.0f, 230.0f));
-                enemigos.push_back(std::make_unique<Raptor>(580.0f, 230.0f));
-                enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 300.0f));
-                enemigos.push_back(std::make_unique<Blob>(250.0f, 430.0f));
-                enemigos.push_back(std::make_unique<Blob>(550.0f, 430.0f));
+                spawnearGrupo({T::Raptor, T::Raptor, T::Spreadshot, T::Blob, T::Blob});
                 break;
 
             case SALA_F:
-                // F = room_blue. 2 spreadshots y 2 raptors.
-                enemigos.push_back(std::make_unique<Spreadshot>(250.0f, 240.0f));
-                enemigos.push_back(std::make_unique<Spreadshot>(550.0f, 240.0f));
-                enemigos.push_back(std::make_unique<Raptor>(260.0f, 420.0f));
-                enemigos.push_back(std::make_unique<Raptor>(540.0f, 420.0f));
+                spawnearGrupo({T::Spreadshot, T::Spreadshot, T::Raptor, T::Raptor});
                 break;
 
             case SALA_G:
-                // G = room_teal. 4 spreadshots.
-                enemigos.push_back(std::make_unique<Spreadshot>(220.0f, 220.0f));
-                enemigos.push_back(std::make_unique<Spreadshot>(580.0f, 220.0f));
-                enemigos.push_back(std::make_unique<Spreadshot>(220.0f, 420.0f));
-                enemigos.push_back(std::make_unique<Spreadshot>(580.0f, 420.0f));
+                spawnearGrupo({T::Spreadshot, T::Spreadshot, T::Spreadshot, T::Spreadshot});
                 break;
 
             case SALA_H:
-                // H = room_checker. 1 rusher y 2 spreadshots.
-                enemigos.push_back(std::make_unique<Rusher>(400.0f, 300.0f));
-                enemigos.push_back(std::make_unique<Spreadshot>(230.0f, 230.0f));
-                enemigos.push_back(std::make_unique<Spreadshot>(570.0f, 430.0f));
+                spawnearGrupo({T::Rusher, T::Spreadshot, T::Spreadshot});
                 break;
 
             case SALA_SECRETA:
-                // Sala secreta. 2 rushers, 1 spreadshot, 2 raptors y 1 blob.
-                enemigos.push_back(std::make_unique<Rusher>(220.0f, 220.0f));
-                enemigos.push_back(std::make_unique<Rusher>(580.0f, 420.0f));
-                enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 300.0f));
-                enemigos.push_back(std::make_unique<Raptor>(580.0f, 220.0f));
-                enemigos.push_back(std::make_unique<Raptor>(220.0f, 420.0f));
-                enemigos.push_back(std::make_unique<Blob>(400.0f, 440.0f));
+                spawnearGrupo({T::Rusher, T::Rusher, T::Spreadshot, T::Raptor, T::Raptor, T::Blob});
                 break;
 
             case SALA_I:
                 // I = boss. Lo dejamos temporal por ahora hasta definir jefe/enemigos finales.
-                enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 210.0f));
-                enemigos.push_back(std::make_unique<Raptor>(230.0f, 430.0f));
-                enemigos.push_back(std::make_unique<Rusher>(570.0f, 430.0f));
+                spawnearGrupo({T::Spreadshot, T::Raptor, T::Rusher});
                 break;
 
             default:
@@ -801,6 +978,48 @@ private:
         }
     }
 
+    void dibujarObjetoFallback(const ObjetoSuelo& objeto) {
+        sf::CircleShape forma(14.0f);
+        forma.setOrigin({14.0f, 14.0f});
+        forma.setPosition(objeto.posicion);
+
+        switch (objeto.tipo) {
+            case TipoObjeto::Corazon:
+                forma.setFillColor(sf::Color(245, 65, 100));
+                break;
+            case TipoObjeto::Estrella:
+                forma.setFillColor(sf::Color(255, 220, 70));
+                break;
+            case TipoObjeto::Rayo:
+                forma.setFillColor(sf::Color(255, 245, 70));
+                break;
+        }
+
+        forma.setOutlineThickness(2.0f);
+        forma.setOutlineColor(sf::Color::Black);
+        ventana.draw(forma);
+    }
+
+    void dibujarObjetosSuelo() {
+        for (const auto& objeto : objetosSuelo) {
+            sf::Texture* textura = texturaParaObjeto(objeto.tipo);
+            if (textura && textura->getSize().x > 0 && textura->getSize().y > 0) {
+                sf::Sprite sprite(*textura);
+                auto tam = textura->getSize();
+                sprite.setOrigin({static_cast<float>(tam.x) / 2.0f,
+                                  static_cast<float>(tam.y) / 2.0f});
+                sprite.setPosition(objeto.posicion);
+
+                float maximo = 34.0f;
+                float escala = maximo / static_cast<float>(std::max(tam.x, tam.y));
+                sprite.setScale({escala, escala});
+                ventana.draw(sprite);
+            } else {
+                dibujarObjetoFallback(objeto);
+            }
+        }
+    }
+
     void dibujarLlave() {
         if (!llaveDisponible || llaveObtenida || salaActual != SALA_SECRETA) {
             return;
@@ -921,6 +1140,13 @@ private:
         puertaSecretaDesbloqueada = false;
         llaveDisponible = false;
         llaveObtenida = false;
+        stacksVelocidad = 0;
+        stacksEstrella = 0;
+        tiempoVelocidad = 0.0f;
+        tiempoEstrella = 0.0f;
+        if (isaac) {
+            isaac->setMultiplicadorVelocidad(1.0f);
+        }
         mensajePantalla.clear();
         tiempoMensaje = 0.0f;
 
@@ -940,6 +1166,7 @@ private:
             tiempoMensaje -= dt;
         }
 
+        actualizarBuffs(dt);
         isaac->actualizar(dt);
         manejarDisparos();
 
@@ -987,8 +1214,12 @@ private:
             else if (auto* ru = dynamic_cast<Rusher*>(enemigos[i].get())) eliminar = ru->listo_para_eliminar();
             else if (auto* s  = dynamic_cast<Spreadshot*>(enemigos[i].get())) eliminar = s->listo_para_eliminar();
             else eliminar = enemigos[i]->estaMuerto();
-            if (eliminar) enemigos.erase(enemigos.begin() + i);
-            else i++;
+            if (eliminar) {
+                intentarSoltarObjeto(enemigos[i].get());
+                enemigos.erase(enemigos.begin() + i);
+            } else {
+                i++;
+            }
         }
 
         if (enemigos.empty() && !salas[salaActual].limpiada) {
@@ -1008,6 +1239,7 @@ private:
         }
 
         actualizarLlave();
+        actualizarObjetosSuelo();
         intentarCambioSala();
 
         if (!isaac->estaVivo()) reiniciarPartida();
@@ -1045,6 +1277,7 @@ private:
             }
         }
 
+        dibujarObjetosSuelo();
         dibujarLlave();
         dibujarHUD();
         dibujarIndicadorLlaveHUD();
@@ -1058,12 +1291,19 @@ public:
         : ventana(sf::VideoMode({800, 600}), "Aventuras en el Edificio de Software"),
           hayTexturaCorazon(false),
           hayTexturaLlave(false),
+          hayTexturaObjetoCorazon(false),
+          hayTexturaObjetoEstrella(false),
+          hayTexturaObjetoRayo(false),
           salaActual(SALA_A),
           bloqueoCambioSala(false),
           puertaSecretaDesbloqueada(false),
           llaveDisponible(false),
           llaveObtenida(false),
           posicionLlave(400.0f, 300.0f),
+          stacksVelocidad(0),
+          stacksEstrella(0),
+          tiempoVelocidad(0.0f),
+          tiempoEstrella(0.0f),
           tiempoMensaje(0.0f),
           hayFuenteHUD(false) {
         ventana.setFramerateLimit(60);
@@ -1080,6 +1320,16 @@ public:
 
         hayTexturaLlave = texturaLlave.loadFromFile(
             "assets/images/key_pixel.png"
+        );
+
+        hayTexturaObjetoCorazon = texturaObjetoCorazon.loadFromFile(
+            "assets/images/items/item_heart.png"
+        );
+        hayTexturaObjetoEstrella = texturaObjetoEstrella.loadFromFile(
+            "assets/images/items/item_star.png"
+        );
+        hayTexturaObjetoRayo = texturaObjetoRayo.loadFromFile(
+            "assets/images/items/item_lightning.png"
         );
 
         configurarSalas();
