@@ -1,4 +1,6 @@
 #include <SFML/Graphics.hpp>
+#include <cstdint>
+#include <SFML/Audio.hpp>
 #include <vector>
 #include <deque>
 #include <memory>
@@ -91,6 +93,12 @@ static constexpr float ANCHO_PUERTA = 110.0f;
 class Juego {
 private:
     sf::RenderWindow ventana;
+    sf::Texture texturaPortada;
+    sf::Texture texturaMenuPrincipal;
+    bool hayTexturaPortada;
+    bool hayTexturaMenuPrincipal;
+    sf::Music musicaPortada;
+    sf::Music musicaMenu;
     sf::Texture texturaCorazon;
     sf::Texture texturaLlave;
     sf::Texture texturaObjetoCorazon;
@@ -138,6 +146,173 @@ private:
     static constexpr int SALA_D = 7; // room_red
     static constexpr int SALA_H = 8; // room_checker
     static constexpr int SALA_I = 9; // room_boss
+
+    void dibujarImagenPantallaCompleta(const sf::Texture& textura) {
+        sf::Sprite sprite(textura);
+        sf::Vector2u tam = textura.getSize();
+        if (tam.x == 0 || tam.y == 0) return;
+
+        float escalaX = 800.0f / static_cast<float>(tam.x);
+        float escalaY = 600.0f / static_cast<float>(tam.y);
+        float escala = std::max(escalaX, escalaY);
+
+        sprite.setScale({escala, escala});
+        sprite.setPosition({
+            (800.0f - static_cast<float>(tam.x) * escala) / 2.0f,
+            (600.0f - static_cast<float>(tam.y) * escala) / 2.0f
+        });
+
+        ventana.draw(sprite);
+    }
+
+    bool mostrarPortadaInicial() {
+        if (musicaPortada.openFromFile("assets/music/title_theme.wav")) {
+            musicaPortada.setLooping(true);
+            musicaPortada.setVolume(45.0f);
+            musicaPortada.play();
+        }
+
+        sf::Clock relojPortada;
+
+        while (ventana.isOpen()) {
+            while (const std::optional<sf::Event> evento = ventana.pollEvent()) {
+                if (evento->is<sf::Event::Closed>()) {
+                    ventana.close();
+                    return false;
+                }
+
+                if (evento->is<sf::Event::KeyPressed>() ||
+                    evento->is<sf::Event::MouseButtonPressed>()) {
+                    musicaPortada.stop();
+                    return true;
+                }
+            }
+
+            float tiempo = relojPortada.getElapsedTime().asSeconds();
+            float progreso = std::min(tiempo / 2.5f, 1.0f);
+            int alphaNegro = static_cast<int>(255.0f * (1.0f - progreso));
+
+            ventana.clear(sf::Color::Black);
+
+            if (hayTexturaPortada) {
+                dibujarImagenPantallaCompleta(texturaPortada);
+            } else {
+                sf::RectangleShape fondo({800.0f, 600.0f});
+                fondo.setFillColor(sf::Color(10, 10, 20));
+                ventana.draw(fondo);
+            }
+
+            if (hayFuenteHUD && tiempo > 1.6f) {
+                sf::Text texto(fuenteHUD, "Presione cualquier tecla para continuar", 26);
+                float parpadeo = (std::sin(tiempo * 4.0f) + 1.0f) / 2.0f;
+                std::uint8_t alpha = static_cast<std::uint8_t>(150 + 105 * parpadeo);
+                texto.setFillColor(sf::Color(255, 235, 150, alpha));
+                texto.setOutlineColor(sf::Color(30, 15, 5, alpha));
+                texto.setOutlineThickness(2.0f);
+                auto bounds = texto.getLocalBounds();
+                texto.setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
+                texto.setPosition({400.0f, 545.0f});
+                ventana.draw(texto);
+            }
+
+            if (alphaNegro > 0) {
+                sf::RectangleShape capaNegra({800.0f, 600.0f});
+                capaNegra.setFillColor(sf::Color(0, 0, 0, static_cast<std::uint8_t>(alphaNegro)));
+                ventana.draw(capaNegra);
+            }
+
+            ventana.display();
+        }
+
+        return false;
+    }
+
+    bool mostrarMenuPrincipal() {
+        musicaPortada.stop();
+
+        if (musicaMenu.openFromFile("assets/music/menu_theme.wav")) {
+            musicaMenu.setLooping(true);
+            musicaMenu.setVolume(45.0f);
+            musicaMenu.play();
+        }
+
+        int opcion = 0;
+        const int totalOpciones = 4;
+        const float posicionesY[4] = {205.0f, 330.0f, 455.0f, 610.0f};
+
+        while (ventana.isOpen()) {
+            while (const std::optional<sf::Event> evento = ventana.pollEvent()) {
+                if (evento->is<sf::Event::Closed>()) {
+                    ventana.close();
+                    return false;
+                }
+
+                if (const auto* kp = evento->getIf<sf::Event::KeyPressed>()) {
+                    if (kp->code == sf::Keyboard::Key::Up ||
+                        kp->code == sf::Keyboard::Key::W) {
+                        opcion = (opcion + totalOpciones - 1) % totalOpciones;
+                    }
+
+                    if (kp->code == sf::Keyboard::Key::Down ||
+                        kp->code == sf::Keyboard::Key::S) {
+                        opcion = (opcion + 1) % totalOpciones;
+                    }
+
+                    if (kp->code == sf::Keyboard::Key::Enter ||
+                        kp->code == sf::Keyboard::Key::Space) {
+                        if (opcion == 0) {
+                            musicaMenu.stop();
+                            return true;
+                        }
+
+                        if (opcion == 1) {
+                            mostrarMensaje("Wikipedia estara disponible despues", 2.0f);
+                        } else if (opcion == 2) {
+                            mostrarMensaje("Controles: WASD mover, IJKL disparar", 2.5f);
+                        } else if (opcion == 3) {
+                            ventana.close();
+                            return false;
+                        }
+                    }
+
+                    if (kp->code == sf::Keyboard::Key::Escape) {
+                        ventana.close();
+                        return false;
+                    }
+                }
+            }
+
+            if (tiempoMensaje > 0.0f) {
+                tiempoMensaje -= reloj.restart().asSeconds();
+            } else {
+                reloj.restart();
+            }
+
+            ventana.clear(sf::Color::Black);
+
+            if (hayTexturaMenuPrincipal) {
+                dibujarImagenPantallaCompleta(texturaMenuPrincipal);
+            } else {
+                sf::RectangleShape fondo({800.0f, 600.0f});
+                fondo.setFillColor(sf::Color(25, 15, 10));
+                ventana.draw(fondo);
+            }
+
+            sf::RectangleShape selector({250.0f, 62.0f});
+            selector.setOrigin({125.0f, 31.0f});
+            selector.setPosition({400.0f, posicionesY[opcion]});
+            selector.setFillColor(sf::Color(255, 220, 80, 45));
+            selector.setOutlineColor(sf::Color(255, 225, 90));
+            selector.setOutlineThickness(3.0f);
+            ventana.draw(selector);
+
+            dibujarMensajePantalla();
+
+            ventana.display();
+        }
+
+        return false;
+    }
 
     void mostrarMensaje(const std::string& texto, float segundos = 3.0f) {
         mensajePantalla = texto;
@@ -1289,6 +1464,8 @@ private:
 public:
     Juego()
         : ventana(sf::VideoMode({800, 600}), "Aventuras en el Edificio de Software"),
+          hayTexturaPortada(false),
+          hayTexturaMenuPrincipal(false),
           hayTexturaCorazon(false),
           hayTexturaLlave(false),
           hayTexturaObjetoCorazon(false),
@@ -1314,6 +1491,13 @@ public:
             hayFuenteHUD = fuenteHUD.openFromFile("assets/fonts/arial.ttf");
         }
 
+        hayTexturaPortada = texturaPortada.loadFromFile(
+            "assets/images/ui/portada.png"
+        );
+        hayTexturaMenuPrincipal = texturaMenuPrincipal.loadFromFile(
+            "assets/images/ui/menu_principal.png"
+        );
+
         hayTexturaCorazon = texturaCorazon.loadFromFile(
             "assets/images/heart_pixel_art_32x32.png"
         );
@@ -1336,6 +1520,16 @@ public:
 
         tiempoEntreDisparos = 0.3f;
 
+        if (!mostrarPortadaInicial()) {
+            personajeElegido = -1;
+            return;
+        }
+
+        if (!mostrarMenuPrincipal()) {
+            personajeElegido = -1;
+            return;
+        }
+
         personajeElegido = seleccionarPersonaje();
         if (personajeElegido < 0) return;
 
@@ -1349,6 +1543,7 @@ public:
 
     void ejecutar() {
         if (personajeElegido < 0) return;
+        reloj.restart();
         while (ventana.isOpen()) {
             float dt = reloj.restart().asSeconds();
             procesarEventos();
