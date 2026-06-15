@@ -7,8 +7,9 @@ ProyectilRaptor::ProyectilRaptor(sf::Vector2f posInicial, sf::Vector2f dir) {
     radio = 20.0f;
     destruido = false;
     impacto = false;
+    formado = false;
     animacion.cargar("assets/images/raptor_proyectil.png", FRAME_W, FRAME_H);
-    animacion.establecer(FILA_VUELO, 4, 0.5f, true);
+    animacion.establecer(FILA_VUELO, 3, 0.67f, false);
 }
 
 void ProyectilRaptor::actualizar(float dt) {
@@ -20,9 +21,16 @@ void ProyectilRaptor::actualizar(float dt) {
         return;
     }
 
+    if (!formado) {
+        animacion.actualizar(dt);
+        if (animacion.termino()) {
+            formado = true;
+            animacion.establecer(FILA_VUELO_FORMADO, 1, 99.0f, false);
+        }
+    }
+
     posicion += direccion * velocidad * dt;
     animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
-    animacion.actualizar(dt);
 
     if (posicion.x < 40.0f || posicion.x > 760.0f ||
         posicion.y < 40.0f || posicion.y > 560.0f) {

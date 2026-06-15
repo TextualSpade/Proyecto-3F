@@ -10,12 +10,14 @@ private:
     float radio;
     bool destruido;
     bool impacto;
+    bool formado;
     Animacion animacion;
 
     static const int FRAME_W = 128;
     static const int FRAME_H = 128;
-    static const int FILA_VUELO   = 0;
-    static const int FILA_IMPACTO = 1;
+    static const int FILA_VUELO         = 0;
+    static const int FILA_VUELO_FORMADO = 0;
+    static const int FILA_IMPACTO       = 1;
 
 public:
     ProyectilRaptor(sf::Vector2f posInicial, sf::Vector2f dir);
