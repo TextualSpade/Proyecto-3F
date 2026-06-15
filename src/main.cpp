@@ -137,7 +137,7 @@ private:
         proyectilesRaptor.clear();
         enemigos.clear();
         isaac->reiniciar(400.0f, 300.0f);
-        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
+        enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 300.0f));
     }
 
     void actualizar(float dt) {
@@ -179,6 +179,8 @@ private:
                 eliminar = raptor->listo_para_eliminar();
             } else if (auto* rusher = dynamic_cast<Rusher*>(enemigos[i].get())) {
                 eliminar = rusher->listo_para_eliminar();
+            } else if (auto* spreadshot = dynamic_cast<Spreadshot*>(enemigos[i].get())) {
+                eliminar = spreadshot->listo_para_eliminar();
             } else {
                 eliminar = enemigos[i]->estaMuerto();
             }
@@ -212,7 +214,7 @@ public:
         std::srand(static_cast<unsigned>(std::time(nullptr)));
         isaac = std::make_unique<Jugador>(400.0f, 300.0f);
         tiempoEntreDisparos = 0.3f;
-        enemigos.push_back(std::make_unique<Rusher>(650.0f, 450.0f));
+        enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 300.0f));
     }
 
     void ejecutar() {
