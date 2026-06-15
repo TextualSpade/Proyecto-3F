@@ -79,7 +79,9 @@ class Juego {
 private:
     sf::RenderWindow ventana;
     sf::Texture texturaCorazon;
+    sf::Texture texturaLlave;
     bool hayTexturaCorazon;
+    bool hayTexturaLlave;
     std::unique_ptr<Jugador> isaac;
     std::deque<ProyectilJugador> proyectilesJugador;
     std::vector<Lagrima> lagrimasEnemigas;
@@ -428,6 +430,7 @@ private:
         salas[SALA_D].mapaFila = 1;
         salas[SALA_D].colorMapa = sf::Color(190, 55, 55);
         salas[SALA_D].izquierda = SALA_C;
+        salas[SALA_D].abajo = SALA_H;
 
         // H = room_checker
         salas[SALA_H].nombre = "H - Sala tablero";
@@ -436,6 +439,7 @@ private:
         salas[SALA_H].mapaFila = 2;
         salas[SALA_H].colorMapa = sf::Color(170, 170, 170);
         salas[SALA_H].izquierda = SALA_F;
+        salas[SALA_H].arriba = SALA_D;
         salas[SALA_H].abajo = SALA_I;
 
         // I = room_boss. Requiere llave.
@@ -770,6 +774,17 @@ private:
             return;
         }
 
+        if (hayTexturaLlave) {
+            sf::Sprite llave(texturaLlave);
+            auto tam = texturaLlave.getSize();
+            llave.setOrigin({static_cast<float>(tam.x) / 2.0f,
+                             static_cast<float>(tam.y) / 2.0f});
+            llave.setPosition(posicionLlave);
+            llave.setScale({0.18f, 0.18f});
+            ventana.draw(llave);
+            return;
+        }
+
         sf::CircleShape cabeza(8.0f);
         cabeza.setOrigin({8.0f, 8.0f});
         cabeza.setPosition(posicionLlave);
@@ -809,6 +824,17 @@ private:
 
     void dibujarIndicadorLlaveHUD() {
         if (!llaveObtenida) {
+            return;
+        }
+
+        if (hayTexturaLlave) {
+            sf::Sprite llave(texturaLlave);
+            auto tam = texturaLlave.getSize();
+            llave.setOrigin({static_cast<float>(tam.x) / 2.0f,
+                             static_cast<float>(tam.y) / 2.0f});
+            llave.setPosition({55.0f, 56.0f});
+            llave.setScale({0.07f, 0.07f});
+            ventana.draw(llave);
             return;
         }
 
@@ -999,6 +1025,7 @@ public:
     Juego()
         : ventana(sf::VideoMode({800, 600}), "Aventuras en el Edificio de Software"),
           hayTexturaCorazon(false),
+          hayTexturaLlave(false),
           salaActual(SALA_A),
           bloqueoCambioSala(false),
           puertaSecretaDesbloqueada(false),
@@ -1017,6 +1044,10 @@ public:
 
         hayTexturaCorazon = texturaCorazon.loadFromFile(
             "assets/images/heart_pixel_art_32x32.png"
+        );
+
+        hayTexturaLlave = texturaLlave.loadFromFile(
+            "assets/images/key_pixel.png"
         );
 
         configurarSalas();
