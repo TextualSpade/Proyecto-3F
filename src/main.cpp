@@ -13,6 +13,7 @@
 #include "Rusher.hpp"
 #include "Spreadshot.hpp"
 #include "ProyectilRaptor.hpp"
+#include "ProyectilSpreadshot.hpp"
 
 class Juego {
 private:
@@ -21,6 +22,7 @@ private:
     std::vector<Lagrima> lagrimas;
     std::vector<Lagrima> lagrimasEnemigas;
     std::vector<std::unique_ptr<ProyectilRaptor>> proyectilesRaptor;
+    std::vector<std::unique_ptr<ProyectilSpreadshot>> proyectilesSpreadshot;
     std::vector<std::unique_ptr<Enemigo>> enemigos;
     sf::Clock reloj;
     sf::Clock relojDisparo;
@@ -55,6 +57,9 @@ private:
                 if (dynamic_cast<Raptor*>(enemigo.get())) {
                     proyectilesRaptor.push_back(
                         std::make_unique<ProyectilRaptor>(enemigo->getPosicion(), dirSalida));
+                } else if (dynamic_cast<Spreadshot*>(enemigo.get())) {
+                    proyectilesSpreadshot.push_back(
+                        std::make_unique<ProyectilSpreadshot>(enemigo->getPosicion(), dirSalida));
                 } else {
                     lagrimasEnemigas.push_back(
                         Lagrima(enemigo->getPosicion(), dirSalida,
@@ -116,6 +121,15 @@ private:
                 proy->golpear();
             }
         }
+
+        for (auto& proy : proyectilesSpreadshot) {
+            if (!proy->estaDestruido() &&
+                colisionan(proy->getPosicion(), proy->getRadio(),
+                           isaac->getPosicion(), isaac->getRadio())) {
+                isaac->recibirDanio(1);
+                proy->golpear();
+            }
+        }
     }
 
     void dibujarHUD() {
@@ -135,6 +149,7 @@ private:
         lagrimas.clear();
         lagrimasEnemigas.clear();
         proyectilesRaptor.clear();
+        proyectilesSpreadshot.clear();
         enemigos.clear();
         isaac->reiniciar(400.0f, 300.0f);
         enemigos.push_back(std::make_unique<Spreadshot>(400.0f, 300.0f));
@@ -166,6 +181,12 @@ private:
         for (size_t i = 0; i < proyectilesRaptor.size(); ) {
             proyectilesRaptor[i]->actualizar(dt);
             if (proyectilesRaptor[i]->estaDestruido()) proyectilesRaptor.erase(proyectilesRaptor.begin() + i);
+            else i++;
+        }
+
+        for (size_t i = 0; i < proyectilesSpreadshot.size(); ) {
+            proyectilesSpreadshot[i]->actualizar(dt);
+            if (proyectilesSpreadshot[i]->estaDestruido()) proyectilesSpreadshot.erase(proyectilesSpreadshot.begin() + i);
             else i++;
         }
 
@@ -204,6 +225,7 @@ private:
         for (auto& lagrima : lagrimas) lagrima.dibujar(ventana);
         for (auto& lagrima : lagrimasEnemigas) lagrima.dibujar(ventana);
         for (auto& proy : proyectilesRaptor) proy->dibujar(ventana);
+        for (auto& proy : proyectilesSpreadshot) proy->dibujar(ventana);
         dibujarHUD();
         ventana.display();
     }

@@ -19,7 +19,6 @@ private:
 
     float tiempoTeleport;
     float cronometroTeleport;
-    bool pendienteTeleport;
 
     bool animMuerteTerminada;
     bool listoParaDisparar;
@@ -29,9 +28,9 @@ private:
     static const int FRAME_H = 128;
 
     static const int FILA_IDLE   = 0;
-    static const int FILA_ATTACK = 3;
-    static const int FILA_HURT   = 4;
-    static const int FILA_DEATH  = 5;
+    static const int FILA_ATTACK = 1;
+    static const int FILA_HURT   = 2;
+    static const int FILA_DEATH  = 3;
 
     void cambiarEstado(Estado nuevo);
     void teletransportar();

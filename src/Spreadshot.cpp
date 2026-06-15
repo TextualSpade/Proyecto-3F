@@ -14,7 +14,7 @@ namespace {
 }
 
 Spreadshot::Spreadshot(float x, float y)
-    : Enemigo({x, y}, 0.0f, 16.0f, 3, 0, sf::Color::Transparent) {
+    : Enemigo({x, y}, 0.0f, 40.0f, 3, 0, sf::Color::Transparent) {
     estado = Estado::Idle;
     tiempoRecarga = 3.0f;
     cronometro = 0.0f;
@@ -23,7 +23,6 @@ Spreadshot::Spreadshot(float x, float y)
     invulnerable = false;
     tiempoTeleport = 0.4f;
     cronometroTeleport = 0.0f;
-    pendienteTeleport = false;
     animMuerteTerminada = false;
     listoParaDisparar = false;
     animacion.cargar("assets/images/spreadshot_sheet.png", FRAME_W, FRAME_H);
@@ -99,9 +98,7 @@ void Spreadshot::actualizar(float dt) {
 
     if (estado == Estado::Hurt) {
         animacion.actualizar(dt);
-        if (animacion.termino()) {
-            cambiarEstado(Estado::Teleportando);
-        }
+        if (animacion.termino()) cambiarEstado(Estado::Teleportando);
         animacion.setPosicion(posicion - sf::Vector2f(FRAME_W / 2.0f, FRAME_H / 2.0f));
         forma.setPosition(posicion);
         return;
