@@ -807,12 +807,12 @@ private:
     }
 
     float probabilidadDropEnemigo(Enemigo* enemigo) const {
-        // Drop rates reducidos para que los objetos sean especiales,
-        // no algo que aparezca en cada combate.
-        if (dynamic_cast<Blob*>(enemigo)) return 0.10f;
-        if (dynamic_cast<Raptor*>(enemigo)) return 0.15f;
-        if (dynamic_cast<Rusher*>(enemigo)) return 0.20f;
-        if (dynamic_cast<Spreadshot*>(enemigo)) return 0.20f;
+        // Drop rates ajustados: un poco más altos que antes,
+        // pero sin llenar toda la sala de objetos.
+        if (dynamic_cast<Blob*>(enemigo)) return 0.15f;
+        if (dynamic_cast<Raptor*>(enemigo)) return 0.20f;
+        if (dynamic_cast<Rusher*>(enemigo)) return 0.25f;
+        if (dynamic_cast<Spreadshot*>(enemigo)) return 0.25f;
         return 0.0f;
     }
 
@@ -1713,8 +1713,119 @@ private:
 
         if (!isaac->estaVivo()) {
             reproducirSonido(bufferPlayerDeath, hayPlayerDeath, 65.0f);
-            reiniciarPartida();
+            manejarGameOver();
+            return;
         }
+    }
+
+    void dibujarEscenaSinDisplay() {
+        ventana.clear(sf::Color(0, 0, 0));
+        dibujarFondoSala();
+        dibujarPuertasDisponibles();
+
+        if (isaac) isaac->dibujar(ventana);
+        for (auto& enemigo : enemigos) enemigo->dibujar(ventana);
+        for (auto& proy : proyectilesJugador) proy.dibujar(ventana);
+        for (auto& lagrima : lagrimasEnemigas) lagrima.dibujar(ventana);
+        for (auto& proy : proyectilesRaptor) proy->dibujar(ventana);
+        for (auto& proy : proyectilesSpreadshot) proy->dibujar(ventana);
+
+        dibujarObjetosSuelo();
+        dibujarLlave();
+        dibujarHUD();
+        dibujarIndicadorLlaveHUD();
+        dibujarMiniMapa();
+    }
+
+    bool mostrarPantallaGameOver() {
+        detenerMusicaFondo();
+
+        sf::Clock relojOscurecer;
+        sf::Clock relojAnimacion;
+        bool puedeContinuar = false;
+
+        while (ventana.isOpen()) {
+            while (const std::optional<sf::Event> evento = ventana.pollEvent()) {
+                if (evento->is<sf::Event::Closed>()) {
+                    ventana.close();
+                    return false;
+                }
+
+                if (puedeContinuar &&
+                    (evento->is<sf::Event::KeyPressed>() ||
+                     evento->is<sf::Event::MouseButtonPressed>())) {
+                    return true;
+                }
+            }
+
+            float dt = relojAnimacion.restart().asSeconds();
+            if (isaac) {
+                isaac->actualizar(dt);
+            }
+
+            float tiempo = relojOscurecer.getElapsedTime().asSeconds();
+            float progresoOscuro = std::min(tiempo / 2.4f, 1.0f);
+            float parpadeo = (std::sin(tiempo * 4.0f) + 1.0f) * 0.5f;
+
+            dibujarEscenaSinDisplay();
+
+            sf::RectangleShape capaNegra({800.0f, 600.0f});
+            std::uint8_t alphaNegro = static_cast<std::uint8_t>(220.0f * progresoOscuro);
+            capaNegra.setFillColor(sf::Color(0, 0, 0, alphaNegro));
+            ventana.draw(capaNegra);
+
+            if (hayFuenteHUD && tiempo > 0.8f) {
+                sf::Text gameOver(fuenteHUD, "GAME OVER", 72);
+                gameOver.setFillColor(sf::Color(235, 185, 45));
+                gameOver.setOutlineColor(sf::Color(55, 30, 5));
+                gameOver.setOutlineThickness(5.0f);
+                auto gb = gameOver.getLocalBounds();
+                gameOver.setOrigin({gb.size.x / 2.0f, gb.size.y / 2.0f});
+                gameOver.setPosition({400.0f, 250.0f});
+                ventana.draw(gameOver);
+
+                if (tiempo > 2.4f) {
+                    puedeContinuar = true;
+                    sf::Text continuar(fuenteHUD, "Presione cualquier tecla para continuar", 24);
+                    std::uint8_t alphaTexto = static_cast<std::uint8_t>(150.0f + 105.0f * parpadeo);
+                    continuar.setFillColor(sf::Color(255, 230, 140, alphaTexto));
+                    continuar.setOutlineColor(sf::Color(30, 15, 0, alphaTexto));
+                    continuar.setOutlineThickness(2.0f);
+                    auto cb = continuar.getLocalBounds();
+                    continuar.setOrigin({cb.size.x / 2.0f, cb.size.y / 2.0f});
+                    continuar.setPosition({400.0f, 360.0f});
+                    ventana.draw(continuar);
+                }
+            }
+
+            ventana.display();
+        }
+
+        return false;
+    }
+
+    void manejarGameOver() {
+        if (!mostrarPantallaGameOver()) {
+            return;
+        }
+
+        if (!mostrarMenuPrincipal()) {
+            ventana.close();
+            return;
+        }
+
+        personajeElegido = seleccionarPersonaje();
+        if (personajeElegido < 0) {
+            ventana.close();
+            return;
+        }
+
+        const ConfigPersonaje& cfg = PERSONAJES[personajeElegido];
+        isaac = std::make_unique<Jugador>(400.0f, 300.0f,
+                                          cfg.sheet1, cfg.sheet2, cfg.proyectil);
+
+        reiniciarPartida();
+        reloj.restart();
     }
 
     void renderizar() {
