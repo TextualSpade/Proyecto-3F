@@ -17,7 +17,7 @@ Jugador::Jugador(float x, float y,
 {
     posicion           = {x, y};
     velocidad          = 300.0f;
-    radio              = 20.0f;
+    radio              = 18.0f;
     vidaMaxima         = 3;
     vida               = vidaMaxima;
     tiempoInvulnerable = 0.0f;
@@ -28,6 +28,8 @@ Jugador::Jugador(float x, float y,
     rutaProyectil      = proyectil;
     rutaSheet1         = sheet1;
     slashSegundo       = false;
+    hurtSegundo        = false;
+    dyingSegundo       = false;
 
     animSheet1.cargar(sheet1, FW, FH);
     animSheet2.cargar(sheet2, FW, FH);
@@ -51,6 +53,8 @@ void Jugador::cambiarEstado(Estado nuevo) {
     estadoActual = nuevo;
     usandoSheet2 = false;
     slashSegundo = false;
+    hurtSegundo  = false;
+    dyingSegundo = false;
 
     switch (nuevo) {
         case Estado::Idle:
@@ -90,15 +94,14 @@ void Jugador::actualizarAnimacion(float dt) {
                 animSheet1.establecerRango(4, 10, 2, VEL_SLASH, false);
                 aplicarFlip();
             } else if (slashSegundo && animSheet1.termino()) {
-                estadoActual = Estado::Idle;
                 slashSegundo = false;
+                estadoActual = Estado::Idle;
                 usandoSheet2 = false;
                 animSheet1.establecerRango(0, 0, 10, VEL_IDLE, true);
                 aplicarFlip();
             }
             break;
-        case Estado::Hurt: {
-            static bool hurtSegundo = false;
+        case Estado::Hurt:
             if (!hurtSegundo && animSheet2.termino()) {
                 hurtSegundo = true;
                 animSheet2.establecerRango(2, 10, 2, VEL_HURT, false);
@@ -111,19 +114,13 @@ void Jugador::actualizarAnimacion(float dt) {
                 aplicarFlip();
             }
             break;
-        }
-        case Estado::Dying: {
-            static bool dyingSegundo = false;
+        case Estado::Dying:
             if (!dyingSegundo && animSheet2.termino()) {
                 dyingSegundo = true;
                 animSheet2.establecerRango(4, 10, 5, VEL_DYING, false);
                 aplicarFlip();
             }
-            if (dyingSegundo && animSheet2.termino()) {
-                dyingSegundo = false;
-            }
             break;
-        }
         default:
             break;
     }
@@ -162,10 +159,16 @@ void Jugador::actualizar(float dt) {
         posicion += movimiento * velocidad * dt;
     }
 
-    if (posicion.x < 40.0f + radio)  posicion.x = 40.0f + radio;
-    if (posicion.x > 760.0f - radio) posicion.x = 760.0f - radio;
-    if (posicion.y < 40.0f + radio)  posicion.y = 40.0f + radio;
-    if (posicion.y > 560.0f - radio) posicion.y = 560.0f - radio;
+    const float OFFSET_Y   = 10.0f;
+    const float MARGEN_IZQ = 40.0f + radio;
+    const float MARGEN_DER = 760.0f - radio;
+    const float MARGEN_ARR = 40.0f + radio + OFFSET_Y;
+    const float MARGEN_ABA = 560.0f - radio + OFFSET_Y;
+
+    if (posicion.x < MARGEN_IZQ) posicion.x = MARGEN_IZQ;
+    if (posicion.x > MARGEN_DER) posicion.x = MARGEN_DER;
+    if (posicion.y < MARGEN_ARR) posicion.y = MARGEN_ARR;
+    if (posicion.y > MARGEN_ABA) posicion.y = MARGEN_ABA;
 
     if (tiempoInvulnerable > 0.0f) tiempoInvulnerable -= dt;
 
@@ -214,6 +217,8 @@ void Jugador::reiniciar(float x, float y) {
     miraDerecha        = true;
     usandoSheet2       = false;
     slashSegundo       = false;
+    hurtSegundo        = false;
+    dyingSegundo       = false;
     estadoActual       = Estado::Idle;
     animSheet1.establecerRango(0, 0, 10, VEL_IDLE, true);
     animSheet1.setPosicion(posicion);

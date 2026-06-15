@@ -20,6 +20,8 @@ private:
     Animacion animSheet2;
     bool usandoSheet2;
     bool slashSegundo;
+    bool hurtSegundo;
+    bool dyingSegundo;
 
     Estado estadoActual;
     bool miraDerecha;
