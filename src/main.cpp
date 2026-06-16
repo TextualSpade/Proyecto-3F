@@ -89,6 +89,79 @@ static constexpr float CENTRO_X = 400.0f;
 static constexpr float CENTRO_Y = 300.0f;
 static constexpr float ANCHO_PUERTA = 110.0f;
 
+static constexpr float ANCHO_VIRTUAL = 800.0f;
+static constexpr float ALTO_VIRTUAL = 600.0f;
+
+
+struct RectPantalla {
+    float x;
+    float y;
+    float w;
+    float h;
+};
+
+static RectPantalla calcularRectContainPantalla(const sf::Vector2u& tamVentana,
+                                               const sf::Vector2u& tamImagen,
+                                               float margenX = 0.015f,
+                                               float margenY = 0.015f) {
+    if (tamImagen.x == 0 || tamImagen.y == 0 || tamVentana.x == 0 || tamVentana.y == 0) {
+        return {0.0f, 0.0f, 0.0f, 0.0f};
+    }
+
+    float anchoDisponible = static_cast<float>(tamVentana.x) * (1.0f - 2.0f * margenX);
+    float altoDisponible  = static_cast<float>(tamVentana.y) * (1.0f - 2.0f * margenY);
+
+    float escalaX = anchoDisponible / static_cast<float>(tamImagen.x);
+    float escalaY = altoDisponible  / static_cast<float>(tamImagen.y);
+    float escala = std::min(escalaX, escalaY);
+
+    float anchoFinal = static_cast<float>(tamImagen.x) * escala;
+    float altoFinal  = static_cast<float>(tamImagen.y) * escala;
+
+    float x = (static_cast<float>(tamVentana.x) - anchoFinal) / 2.0f;
+    float y = (static_cast<float>(tamVentana.y) - altoFinal) / 2.0f;
+
+    return {x, y, anchoFinal, altoFinal};
+}
+
+static void aplicarRectASprite(sf::Sprite& sprite,
+                               const RectPantalla& rect,
+                               const sf::Vector2u& tamImagen) {
+    if (tamImagen.x == 0 || tamImagen.y == 0) return;
+
+    sprite.setPosition({rect.x, rect.y});
+    sprite.setScale({
+        rect.w / static_cast<float>(tamImagen.x),
+        rect.h / static_cast<float>(tamImagen.y)
+    });
+}
+
+static sf::View crearVistaLetterbox(const sf::RenderWindow& ventana) {
+    sf::View vista(sf::FloatRect({0.0f, 0.0f}, {ANCHO_VIRTUAL, ALTO_VIRTUAL}));
+
+    float anchoVentana = static_cast<float>(ventana.getSize().x);
+    float altoVentana = static_cast<float>(ventana.getSize().y);
+
+    float proporcionVentana = anchoVentana / altoVentana;
+    float proporcionJuego = ANCHO_VIRTUAL / ALTO_VIRTUAL;
+
+    float viewportX = 0.0f;
+    float viewportY = 0.0f;
+    float viewportW = 1.0f;
+    float viewportH = 1.0f;
+
+    if (proporcionVentana > proporcionJuego) {
+        viewportW = proporcionJuego / proporcionVentana;
+        viewportX = (1.0f - viewportW) / 2.0f;
+    } else if (proporcionVentana < proporcionJuego) {
+        viewportH = proporcionVentana / proporcionJuego;
+        viewportY = (1.0f - viewportH) / 2.0f;
+    }
+
+    vista.setViewport(sf::FloatRect({viewportX, viewportY}, {viewportW, viewportH}));
+    return vista;
+}
+
 
 class Juego {
 private:
@@ -192,9 +265,11 @@ private:
         sf::Vector2u tam = textura.getSize();
         if (tam.x == 0 || tam.y == 0) return;
 
+        // Ajuste tipo "contain": muestra la imagen completa sin recortarla.
+        // Si sobra espacio por los lados o arriba/abajo, queda negro.
         float escalaX = 800.0f / static_cast<float>(tam.x);
         float escalaY = 600.0f / static_cast<float>(tam.y);
-        float escala = std::max(escalaX, escalaY);
+        float escala = std::min(escalaX, escalaY);
 
         sprite.setScale({escala, escala});
         sprite.setPosition({
@@ -378,7 +453,7 @@ private:
         std::vector<std::vector<std::string>> paginas = {
             {
                 "WIKIPEDIA - PERSONAJES",
-                "Heroe de Software: Un estudiante elegido por el edificio. Tras quedarse",
+                "Ingeniero en Sistemas: Un estudiante elegido por el edificio. Tras quedarse",
                 "programando hasta tarde, encontro una falla extrana en los laboratorios y",
                 "desperto con una espada de energia hecha de codigo compilado.",
                 "",
@@ -494,6 +569,7 @@ private:
 
     bool mostrarMenuPrincipal() {
         musicaPortada.stop();
+        ventana.setView(ventana.getDefaultView());
 
         if (musicaMenu.openFromFile("assets/music/menu_theme.wav")) {
             musicaMenu.setLooping(true);
@@ -503,7 +579,13 @@ private:
 
         int opcion = 0;
         const int totalOpciones = 4;
-        const float posicionesY[4] = {159.0f, 261.0f, 363.0f, 486.0f};
+
+        // Coordenadas tomadas sobre la imagen original del menu_principal.png.
+        // Así el selector queda centrado aunque la imagen se escale en pantalla completa.
+        const float selectorCentroXImagen = 683.0f;
+        const std::array<float, 4> selectorCentroYImagen = {204.0f, 337.0f, 469.0f, 624.0f};
+        const float selectorAnchoImagen = 390.0f;
+        const float selectorAltoImagen = 82.0f;
 
         while (ventana.isOpen()) {
             while (const std::optional<sf::Event> evento = ventana.pollEvent()) {
@@ -528,13 +610,16 @@ private:
                     if (kp->code == sf::Keyboard::Key::Enter ||
                         kp->code == sf::Keyboard::Key::Space) {
                         reproducirSonido(bufferMenuSelect, hayMenuSelect, 65.0f);
+
                         if (opcion == 0) {
                             musicaMenu.stop();
+                            ventana.setView(crearVistaLetterbox(ventana));
                             return true;
                         }
 
                         if (opcion == 1) {
                             mostrarWikipedia();
+                            ventana.setView(ventana.getDefaultView());
                         } else if (opcion == 2) {
                             mostrarMensaje("Controles: WASD mover, IJKL disparar", 2.5f);
                         } else if (opcion == 3) {
@@ -556,23 +641,44 @@ private:
                 reloj.restart();
             }
 
+            ventana.setView(ventana.getDefaultView());
             ventana.clear(sf::Color::Black);
 
+            RectPantalla rectMenu{0.0f, 0.0f, static_cast<float>(ventana.getSize().x), static_cast<float>(ventana.getSize().y)};
+
             if (hayTexturaMenuPrincipal) {
-                dibujarImagenPantallaCompleta(texturaMenuPrincipal);
+                sf::Sprite fondoMenu(texturaMenuPrincipal);
+                rectMenu = calcularRectContainPantalla(
+                    ventana.getSize(),
+                    texturaMenuPrincipal.getSize(),
+                    0.008f,
+                    0.008f
+                );
+                aplicarRectASprite(fondoMenu, rectMenu, texturaMenuPrincipal.getSize());
+                ventana.draw(fondoMenu);
             } else {
-                sf::RectangleShape fondo({800.0f, 600.0f});
+                sf::RectangleShape fondo({static_cast<float>(ventana.getSize().x), static_cast<float>(ventana.getSize().y)});
                 fondo.setFillColor(sf::Color(25, 15, 10));
                 ventana.draw(fondo);
             }
 
-            sf::RectangleShape selector({300.0f, 72.0f});
-            selector.setOrigin({150.0f, 36.0f});
-            selector.setPosition({400.0f, posicionesY[opcion]});
-            selector.setFillColor(sf::Color(255, 220, 80, 45));
-            selector.setOutlineColor(sf::Color(255, 225, 90));
-            selector.setOutlineThickness(3.0f);
-            ventana.draw(selector);
+            if (hayTexturaMenuPrincipal && texturaMenuPrincipal.getSize().x > 0 && texturaMenuPrincipal.getSize().y > 0) {
+                float escalaX = rectMenu.w / static_cast<float>(texturaMenuPrincipal.getSize().x);
+                float escalaY = rectMenu.h / static_cast<float>(texturaMenuPrincipal.getSize().y);
+
+                float selectorW = selectorAnchoImagen * escalaX;
+                float selectorH = selectorAltoImagen * escalaY;
+                float selectorX = rectMenu.x + selectorCentroXImagen * escalaX;
+                float selectorY = rectMenu.y + selectorCentroYImagen[opcion] * escalaY;
+
+                sf::RectangleShape selector({selectorW, selectorH});
+                selector.setOrigin({selectorW / 2.0f, selectorH / 2.0f});
+                selector.setPosition({selectorX, selectorY});
+                selector.setFillColor(sf::Color(255, 220, 80, 38));
+                selector.setOutlineColor(sf::Color(255, 225, 90));
+                selector.setOutlineThickness(std::max(3.0f, selectorH * 0.045f));
+                ventana.draw(selector);
+            }
 
             dibujarMensajePantalla();
 
@@ -711,7 +817,15 @@ private:
 
     void procesarEventos() {
         while (const std::optional<sf::Event> evento = ventana.pollEvent()) {
-            if (evento->is<sf::Event::Closed>()) ventana.close();
+            if (evento->is<sf::Event::Closed>()) {
+                ventana.close();
+            }
+
+            if (const auto* tecla = evento->getIf<sf::Event::KeyPressed>()) {
+                if (tecla->code == sf::Keyboard::Key::Escape) {
+                    ventana.close();
+                }
+            }
         }
     }
 
@@ -806,13 +920,45 @@ private:
         ventana.draw(circulo);
     }
 
+    sf::Vector2f centroHitboxEnemigo(Enemigo* enemigo) const {
+        if (!enemigo) return {0.0f, 0.0f};
+
+        sf::Vector2f centro = enemigo->getPosicion();
+
+        // Los sprites de enemigos tienen espacio transparente alrededor.
+        // Este pequeño ajuste centra mejor la zona real de contacto.
+        if (dynamic_cast<Blob*>(enemigo)) {
+            centro += sf::Vector2f(0.0f, 4.0f);
+        } else if (dynamic_cast<Raptor*>(enemigo)) {
+            centro += sf::Vector2f(0.0f, 6.0f);
+        } else if (dynamic_cast<Rusher*>(enemigo)) {
+            centro += sf::Vector2f(0.0f, 5.0f);
+        } else if (dynamic_cast<Spreadshot*>(enemigo)) {
+            centro += sf::Vector2f(0.0f, 5.0f);
+        }
+
+        return centro;
+    }
+
+    float radioHitboxEnemigo(Enemigo* enemigo) const {
+        if (!enemigo) return 0.0f;
+
+        // Un poco más grandes que antes, pero sin rebasar visualmente el sprite.
+        if (dynamic_cast<Blob*>(enemigo)) return 23.0f;
+        if (dynamic_cast<Raptor*>(enemigo)) return 27.0f;
+        if (dynamic_cast<Rusher*>(enemigo)) return 25.0f;
+        if (dynamic_cast<Spreadshot*>(enemigo)) return 26.0f;
+
+        return enemigo->getRadio();
+    }
+
     float probabilidadDropEnemigo(Enemigo* enemigo) const {
         // Drop rates ajustados: un poco más altos que antes,
         // pero sin llenar toda la sala de objetos.
-        if (dynamic_cast<Blob*>(enemigo)) return 0.15f;
-        if (dynamic_cast<Raptor*>(enemigo)) return 0.20f;
-        if (dynamic_cast<Rusher*>(enemigo)) return 0.25f;
-        if (dynamic_cast<Spreadshot*>(enemigo)) return 0.25f;
+        if (dynamic_cast<Blob*>(enemigo)) return 0.20f;
+        if (dynamic_cast<Raptor*>(enemigo)) return 0.25f;
+        if (dynamic_cast<Rusher*>(enemigo)) return 0.30f;
+        if (dynamic_cast<Spreadshot*>(enemigo)) return 0.30f;
         return 0.0f;
     }
 
@@ -915,7 +1061,8 @@ private:
             for (auto& enemigo : enemigos) {
                 if (!proy.estaDestruido() && !enemigo->estaMuerto() &&
                     colisionan(proy.getPosicion(), proy.getRadio(),
-                               enemigo->getPosicion(), enemigo->getRadio())) {
+                               centroHitboxEnemigo(enemigo.get()),
+                               radioHitboxEnemigo(enemigo.get()))) {
                     reproducirSonidoDanioEnemigo(enemigo.get());
                     enemigo->recibirDanio(1);
                     proy.destruir();
@@ -925,7 +1072,8 @@ private:
 
         for (auto& enemigo : enemigos) {
             if (!enemigo->estaMuerto() &&
-                colisionan(enemigo->getPosicion(), enemigo->getRadio(),
+                colisionan(centroHitboxEnemigo(enemigo.get()),
+                           radioHitboxEnemigo(enemigo.get()),
                            isaac->getCentroHitbox(), isaac->getRadio())) {
                 if (!isaac->esInvulnerable()) {
                     reproducirSonido(bufferPlayerHurt, hayPlayerHurt, 55.0f);
@@ -1814,6 +1962,8 @@ private:
             return;
         }
 
+        ventana.setView(crearVistaLetterbox(ventana));
+
         personajeElegido = seleccionarPersonaje();
         if (personajeElegido < 0) {
             ventana.close();
@@ -1829,6 +1979,7 @@ private:
     }
 
     void renderizar() {
+        ventana.setView(crearVistaLetterbox(ventana));
         ventana.clear(sf::Color(0, 0, 0));
         dibujarFondoSala();
         dibujarPuertasDisponibles();
@@ -1844,7 +1995,7 @@ private:
             isaac->dibujarHitbox(ventana);
 
             for (auto& enemigo : enemigos) {
-                dibujarCirculoDebug(enemigo->getPosicion(), enemigo->getRadio(), sf::Color::Yellow);
+                dibujarCirculoDebug(centroHitboxEnemigo(enemigo.get()), radioHitboxEnemigo(enemigo.get()), sf::Color::Yellow);
             }
 
             for (auto& lagrima : lagrimasEnemigas) {
@@ -1871,7 +2022,7 @@ private:
 
 public:
     Juego()
-        : ventana(sf::VideoMode({800, 600}), "Aventuras en el Edificio de Software"),
+        : ventana(sf::VideoMode::getDesktopMode(), "Aventuras en el Edificio de Software", sf::State::Fullscreen),
           hayTexturaPortada(false),
           hayTexturaMenuPrincipal(false),
           pistaFondoActual(""),
@@ -1910,6 +2061,7 @@ public:
           tiempoMensaje(0.0f),
           hayFuenteHUD(false) {
         ventana.setFramerateLimit(60);
+        ventana.setView(crearVistaLetterbox(ventana));
         std::srand(static_cast<unsigned>(std::time(nullptr)));
         cargarSonidos();
 
