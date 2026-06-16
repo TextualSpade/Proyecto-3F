@@ -1,75 +1,184 @@
-class Usuario
-Usuario o-- Personaje
+@startuml
+title Diagrama de clases - Proyecto 3F
 
+skinparam classAttributeIconSize 0
 
-class Personaje {
-  +Morir()
-  +Dañar()
-  +RecibirDaño()
+class Juego {
+  -ventana: sf::RenderWindow
+  -isaac: Jugador
+  -enemigos: vector<Enemigo>
+  -proyectilesJugador: deque<ProyectilJugador>
+  -lagrimasEnemigas: vector<Lagrima>
+  -proyectilesRaptor: vector<ProyectilRaptor>
+  -proyectilesSpreadshot: vector<ProyectilSpreadshot>
+  -salas: vector<DatosSala>
+  -objetosSuelo: vector<ObjetoSuelo>
+  -llaveObtenida: bool
+  -ejecutar()
+  -actualizar(dt)
+  -renderizar()
+  -manejarColisiones()
+  -cambiarSala(direccion)
 }
-Personaje *-- Vida 
-Personaje "1" o-- "1"Objeto
-class Oso 
-class Gato
-class Perro
-class Conejo
-Oso --|> Personaje
-Gato --|> Personaje
-Perro --|> Personaje
-Conejo --|> Personaje
-Personaje "1" o-- "1" ZapatillasGato
-Personaje "1" o-- "1" CorazonPetalos
-Personaje "1" o-- "1" TrebolRuinas
-Personaje "1" o-- "1" FlechaCaza
-Personaje "1" o-- "1" PiedraPulir
-Personaje "1" o-- "1" PlumaViento
-Personaje "1" o-- "1" BolsaMonedas
 
-
-class Enemigo
-class Fantasma
-class Iguana
-class Hongo
-class Boss
-Fantasma --|> Enemigo
-Iguana --|> Enemigo
-Hongo --|> Enemigo
-Boss --|> Enemigo
-Enemigo *-- Vida
-
-
-class Ataque 
-class Lagrimas
-Lagrimas --|> Ataque
-
-
-class Objeto
-class ZapatillasGato
-class CorazonPetalos
-class TrebolRuinas
-class FlechaCaza
-class PiedraPulir
-class PlumaViento
-class BolsaMonedas
-ZapatillasGato --|> Objeto
-CorazonPetalos --|> Objeto
-TrebolRuinas --|> Objeto
-FlechaCaza --|> Objeto
-PiedraPulir --|> Objeto
-PlumaViento --|> Objeto
-BolsaMonedas --|> Objeto
-
-
-Class Ataque
-Ataque --|> Lagrimas
-Personaje o-- Ataque
-
-
-class Combate {
-  +Dañar(Personaje, Enemigo)
-  +RecibirDaño(Personaje, Enemigo)
+class Jugador {
+  -posicion: sf::Vector2f
+  -velocidad: float
+  -multiplicadorVelocidad: float
+  -radio: float
+  -vida: int
+  -vidaMaxima: int
+  -animSheet1: Animacion
+  -animSheet2: Animacion
+  +actualizar(dt)
+  +dibujar(ventana)
+  +recibirDanio(cantidad)
+  +sanar(cantidad)
+  +getCentroHitbox()
+  +getCentroDisparo()
 }
-Personaje o-- Combate
-Enemigo o-- Combate
 
+abstract class Enemigo {
+  #posicion: sf::Vector2f
+  #objetivo: sf::Vector2f
+  #velocidad: float
+  #radio: float
+  #vida: int
+  +actualizar(dt)
+  +dibujar(ventana)
+  +recibirDanio(cantidad)
+  +intentaDisparar(dirSalida)
+  +estaMuerto()
+}
 
+class Blob {
+  -animacion: Animacion
+  +actualizar(dt)
+  +recibirDanio(cantidad)
+  +tocarJugador()
+}
+
+class Raptor {
+  -animacion: Animacion
+  +actualizar(dt)
+  +intentaDisparar(dirSalida)
+  +recibirDanio(cantidad)
+}
+
+class Rusher {
+  -animacion: Animacion
+  +actualizar(dt)
+  +golpearJugador()
+  +recibirDanio(cantidad)
+}
+
+class Spreadshot {
+  -animacion: Animacion
+  -disparosPendientes: vector<sf::Vector2f>
+  +actualizar(dt)
+  +intentaDisparar(dirSalida)
+  +recibirDanio(cantidad)
+}
+
+class Animacion {
+  -textura: sf::Texture
+  -sprite: sf::Sprite
+  -frameActual: int
+  +cargar(ruta, anchoFrame, altoFrame)
+  +establecerRango(fila, frameInicio, numFrames, velocidad, loop)
+  +actualizar(dt)
+  +dibujar(ventana)
+}
+
+class ProyectilJugador {
+  -textura: sf::Texture
+  -sprite: sf::Sprite
+  -posicion: sf::Vector2f
+  -direccion: sf::Vector2f
+  +actualizar(dt)
+  +dibujar(ventana)
+  +destruir()
+}
+
+class Lagrima {
+  -posicion: sf::Vector2f
+  -direccion: sf::Vector2f
+  -forma: sf::CircleShape
+  +actualizar(dt)
+  +dibujar(ventana)
+  +destruir()
+}
+
+class ProyectilRaptor {
+  -animacion: Animacion
+  -posicion: sf::Vector2f
+  -direccion: sf::Vector2f
+  +actualizar(dt)
+  +dibujar(ventana)
+  +golpear()
+}
+
+class ProyectilSpreadshot {
+  -animacion: Animacion
+  -posicion: sf::Vector2f
+  -direccion: sf::Vector2f
+  -rebotesRestantes: int
+  +actualizar(dt)
+  +dibujar(ventana)
+  +golpear()
+}
+
+class DatosSala {
+  +nombre: string
+  +rutaFondo: string
+  +texturaFondo: sf::Texture
+  +arriba: int
+  +abajo: int
+  +izquierda: int
+  +derecha: int
+  +visitada: bool
+  +limpiada: bool
+  +visibleEnMapa: bool
+}
+
+class ObjetoSuelo {
+  +tipo: TipoObjeto
+  +posicion: sf::Vector2f
+}
+
+enum TipoObjeto {
+  Corazon
+  Estrella
+  Rayo
+}
+
+' Herencia: relación ES
+Blob --|> Enemigo
+Raptor --|> Enemigo
+Rusher --|> Enemigo
+Spreadshot --|> Enemigo
+
+' Composición / agregación: relación TIENE
+Juego *-- "1" Jugador
+Juego o-- "0..*" Enemigo
+Juego o-- "0..*" ProyectilJugador
+Juego o-- "0..*" Lagrima
+Juego o-- "0..*" ProyectilRaptor
+Juego o-- "0..*" ProyectilSpreadshot
+Juego o-- "1..*" DatosSala
+Juego o-- "0..*" ObjetoSuelo
+
+Jugador *-- "2" Animacion
+Blob *-- "1" Animacion
+Raptor *-- "1" Animacion
+Rusher *-- "1" Animacion
+Spreadshot *-- "1" Animacion
+ProyectilRaptor *-- "1" Animacion
+ProyectilSpreadshot *-- "1" Animacion
+ObjetoSuelo --> TipoObjeto
+
+' Uso: relación USA dentro de la lógica de juego
+Juego --> TipoObjeto
+Juego --> Animacion
+
+@enduml

@@ -81,6 +81,47 @@ struct ObjetoSuelo {
     sf::Vector2f posicion;
 };
 
+
+enum class EstadoDragon {
+    Inactivo,
+    Entrada,
+    Combate,
+    Invocando,
+    Muriendo,
+    Derrotado
+};
+
+struct DragonBoss {
+    EstadoDragon estado = EstadoDragon::Inactivo;
+    sf::Vector2f posicion{400.0f, -160.0f};
+    sf::Vector2f destino{400.0f, 235.0f};
+    int vida = 100;
+    int vidaMaxima = 100;
+    int fase = 1;
+    bool invocacionFase1 = false;
+    bool invocacionFase2 = false;
+    bool invocacionFase3 = false;
+    float tiempoEstado = 0.0f;
+    float tiempoDisparo = 0.0f;
+    float tiempoAnimacion = 0.0f;
+    int frame = 0;
+    int fila = 0;
+    float direccionMovimiento = 1.0f;
+    float tiempoPoderFase = 0.0f;
+    int poderesCreadosFase = 0;
+};
+
+struct ProyectilDragon {
+    sf::Vector2f posicion;
+    sf::Vector2f velocidad;
+    float radio = 15.0f;
+    int rebotesRestantes = 0;
+    bool destruido = false;
+    float tiempoVida = 0.0f;
+    int frame = 0;
+    float tiempoAnimacion = 0.0f;
+};
+
 static constexpr float LIMITE_IZQ = 40.0f;
 static constexpr float LIMITE_DER = 760.0f;
 static constexpr float LIMITE_ARR = 40.0f;
@@ -222,6 +263,12 @@ private:
     bool hayTexturaObjetoCorazon;
     bool hayTexturaObjetoEstrella;
     bool hayTexturaObjetoRayo;
+    sf::Texture texturaDragonBoss;
+    sf::Texture texturaFuegoDragon;
+    bool hayTexturaDragonBoss;
+    bool hayTexturaFuegoDragon;
+    DragonBoss dragonBoss;
+    std::vector<ProyectilDragon> proyectilesDragon;
     std::unique_ptr<Jugador> isaac;
     std::deque<ProyectilJugador> proyectilesJugador;
     std::vector<Lagrima> lagrimasEnemigas;
@@ -1058,6 +1105,10 @@ private:
 
     void manejarColisiones() {
         for (auto& proy : proyectilesJugador) {
+            recibirDanioDragon(proy);
+        }
+
+        for (auto& proy : proyectilesJugador) {
             for (auto& enemigo : enemigos) {
                 if (!proy.estaDestruido() && !enemigo->estaMuerto() &&
                     colisionan(proy.getPosicion(), proy.getRadio(),
@@ -1117,6 +1168,18 @@ private:
                 }
                 isaac->recibirDanio(1);
                 proy->golpear();
+            }
+        }
+
+        for (auto& proy : proyectilesDragon) {
+            if (!proy.destruido &&
+                colisionan(proy.posicion, proy.radio,
+                           isaac->getCentroHitbox(), isaac->getRadio())) {
+                if (!isaac->esInvulnerable()) {
+                    reproducirSonido(bufferPlayerHurt, hayPlayerHurt, 55.0f);
+                }
+                isaac->recibirDanio(1);
+                proy.destruido = true;
             }
         }
     }
@@ -1226,8 +1289,12 @@ private:
         lagrimasEnemigas.clear();
         proyectilesRaptor.clear();
         proyectilesSpreadshot.clear();
+        proyectilesDragon.clear();
         enemigos.clear();
         objetosSuelo.clear();
+        if (salaActual != SALA_I) {
+            dragonBoss.estado = EstadoDragon::Inactivo;
+        }
     }
 
     std::vector<sf::Vector2f> posicionesSpawnSeguras(int cantidad) {
@@ -1336,12 +1403,395 @@ private:
                 break;
 
             case SALA_I:
-                // I = boss. Lo dejamos temporal por ahora hasta definir jefe/enemigos finales.
-                spawnearGrupo({T::Spreadshot, T::Raptor, T::Rusher});
+                // I = sala del jefe final. El dragón se maneja fuera del vector de enemigos.
+                iniciarDragonBoss();
                 break;
 
             default:
                 break;
+        }
+    }
+
+
+    void reiniciarDragonBoss() {
+        dragonBoss = DragonBoss{};
+        proyectilesDragon.clear();
+    }
+
+    void iniciarDragonBoss() {
+        reiniciarDragonBoss();
+        dragonBoss.estado = EstadoDragon::Entrada;
+        dragonBoss.posicion = {400.0f, -170.0f};
+        dragonBoss.destino = {400.0f, 235.0f};
+        dragonBoss.vida = 100;
+        dragonBoss.vidaMaxima = 100;
+        dragonBoss.fase = 1;
+        dragonBoss.fila = 2;      // attack: se usa para la entrada desde el cielo
+        dragonBoss.frame = 0;
+        dragonBoss.tiempoEstado = 0.0f;
+        dragonBoss.tiempoDisparo = 0.0f;
+        dragonBoss.tiempoAnimacion = 0.0f;
+        dragonBoss.poderesCreadosFase = 0;
+        dragonBoss.tiempoPoderFase = 2.5f;
+        mostrarMensaje("El dragon ha despertado", 2.5f);
+    }
+
+    bool dragonActivo() const {
+        return salaActual == SALA_I &&
+               dragonBoss.estado != EstadoDragon::Inactivo &&
+               dragonBoss.estado != EstadoDragon::Derrotado;
+    }
+
+    bool dragonPuedeRecibirDanio() const {
+        return dragonBoss.estado == EstadoDragon::Combate;
+    }
+
+    int calcularFaseDragon() const {
+        if (dragonBoss.vida > 66) return 1;
+        if (dragonBoss.vida > 33) return 2;
+        return 3;
+    }
+
+    void actualizarAnimacionDragon(float dt) {
+        dragonBoss.tiempoAnimacion += dt;
+        float velocidad = 0.12f;
+        int maxFrames = 3;
+
+        switch (dragonBoss.estado) {
+            case EstadoDragon::Entrada:
+                dragonBoss.fila = 2; // attack
+                maxFrames = 4;
+                velocidad = 0.10f;
+                break;
+            case EstadoDragon::Combate:
+                dragonBoss.fila = 1; // walk: movimiento leve en el centro
+                maxFrames = 5;
+                velocidad = 0.14f;
+                break;
+            case EstadoDragon::Invocando:
+                dragonBoss.fila = 4; // hurt / quieto
+                maxFrames = 2;
+                velocidad = 0.20f;
+                break;
+            case EstadoDragon::Muriendo:
+                dragonBoss.fila = 5; // death
+                maxFrames = 5;
+                velocidad = 0.18f;
+                break;
+            default:
+                dragonBoss.fila = 0;
+                maxFrames = 3;
+                velocidad = 0.16f;
+                break;
+        }
+
+        if (dragonBoss.tiempoAnimacion >= velocidad) {
+            dragonBoss.tiempoAnimacion = 0.0f;
+            if (dragonBoss.estado == EstadoDragon::Muriendo) {
+                if (dragonBoss.frame < maxFrames - 1) dragonBoss.frame++;
+            } else {
+                dragonBoss.frame = (dragonBoss.frame + 1) % maxFrames;
+            }
+        }
+    }
+
+    void soltarPoderBossAleatorio() {
+        TipoObjeto tipo = TipoObjeto::Corazon;
+        int r = std::rand() % 100;
+        if (r < 34) tipo = TipoObjeto::Corazon;
+        else if (r < 67) tipo = TipoObjeto::Rayo;
+        else tipo = TipoObjeto::Estrella;
+
+        std::vector<sf::Vector2f> puntos = {
+            {210.0f, 230.0f}, {590.0f, 230.0f}, {235.0f, 430.0f},
+            {565.0f, 430.0f}, {400.0f, 420.0f}, {400.0f, 180.0f}
+        };
+
+        sf::Vector2f pos = puntos[std::rand() % puntos.size()];
+        objetosSuelo.push_back({tipo, pos});
+    }
+
+    void intentarPoderesBoss(float dt) {
+        if (dragonBoss.estado != EstadoDragon::Combate) return;
+        if (dragonBoss.poderesCreadosFase >= 3) return;
+
+        dragonBoss.tiempoPoderFase -= dt;
+        if (dragonBoss.tiempoPoderFase <= 0.0f) {
+            soltarPoderBossAleatorio();
+            dragonBoss.poderesCreadosFase++;
+            dragonBoss.tiempoPoderFase = 6.5f + static_cast<float>(std::rand() % 400) / 100.0f;
+        }
+    }
+
+    void dispararConoDragon(int cantidad, bool rebota) {
+        sf::Vector2f origen = dragonBoss.posicion + sf::Vector2f(0.0f, 45.0f);
+        sf::Vector2f objetivo = isaac ? isaac->getCentroHitbox() : sf::Vector2f{400.0f, 500.0f};
+        sf::Vector2f base = objetivo - origen;
+        float len = std::sqrt(base.x * base.x + base.y * base.y);
+        if (len <= 0.001f) base = {0.0f, 1.0f};
+        else base /= len;
+
+        float separacion = 0.13f;
+        float centro = static_cast<float>(cantidad - 1) / 2.0f;
+
+        for (int i = 0; i < cantidad; i++) {
+            float offset = (static_cast<float>(i) - centro) * separacion;
+            sf::Vector2f dir = direccionRotada(base, offset);
+            ProyectilDragon p;
+            p.posicion = origen;
+            p.velocidad = dir * 245.0f;
+            p.radio = 15.0f;
+            p.rebotesRestantes = rebota ? 1 : 0;
+            proyectilesDragon.push_back(p);
+        }
+    }
+
+    void spawnearAddsDragon(int fase) {
+        using T = TipoEnemigoSpawn;
+        if (fase == 1) {
+            spawnearGrupo({T::Blob, T::Raptor});
+            mostrarMensaje("El dragon llama estudiantes corrompidos", 2.4f);
+        } else if (fase == 2) {
+            if (std::rand() % 2 == 0) spawnearGrupo({T::Spreadshot, T::Rusher});
+            else spawnearGrupo({T::Spreadshot, T::Spreadshot});
+            mostrarMensaje("El dragon se cubre con refuerzos", 2.4f);
+        } else {
+            spawnearGrupo({T::Rusher, T::Spreadshot});
+            mostrarMensaje("Ultima defensa del dragon", 2.4f);
+        }
+
+        dragonBoss.estado = EstadoDragon::Invocando;
+        dragonBoss.frame = 0;
+        dragonBoss.tiempoEstado = 0.0f;
+        proyectilesDragon.clear();
+    }
+
+    void revisarInvocacionDragon() {
+        if (dragonBoss.estado != EstadoDragon::Combate) return;
+
+        if (dragonBoss.fase == 1 && !dragonBoss.invocacionFase1 && dragonBoss.vida <= 83) {
+            dragonBoss.invocacionFase1 = true;
+            spawnearAddsDragon(1);
+        } else if (dragonBoss.fase == 2 && !dragonBoss.invocacionFase2 && dragonBoss.vida <= 50) {
+            dragonBoss.invocacionFase2 = true;
+            spawnearAddsDragon(2);
+        } else if (dragonBoss.fase == 3 && !dragonBoss.invocacionFase3 && dragonBoss.vida <= 16) {
+            dragonBoss.invocacionFase3 = true;
+            spawnearAddsDragon(3);
+        }
+    }
+
+    void actualizarDragonBoss(float dt) {
+        if (salaActual != SALA_I || dragonBoss.estado == EstadoDragon::Inactivo ||
+            dragonBoss.estado == EstadoDragon::Derrotado) {
+            return;
+        }
+
+        dragonBoss.tiempoEstado += dt;
+        actualizarAnimacionDragon(dt);
+
+        if (dragonBoss.estado == EstadoDragon::Entrada) {
+            float progreso = std::min(dragonBoss.tiempoEstado / 2.7f, 1.0f);
+            float suave = progreso * progreso * (3.0f - 2.0f * progreso);
+            dragonBoss.posicion.y = -170.0f + (dragonBoss.destino.y + 170.0f) * suave;
+            dragonBoss.posicion.x = 400.0f;
+
+            if (progreso >= 1.0f) {
+                dragonBoss.estado = EstadoDragon::Combate;
+                dragonBoss.frame = 0;
+                dragonBoss.tiempoEstado = 0.0f;
+                dragonBoss.tiempoDisparo = 1.0f;
+                mostrarMensaje("Derrota al Dragon del Edificio", 2.5f);
+            }
+            return;
+        }
+
+        if (dragonBoss.estado == EstadoDragon::Invocando) {
+            if (enemigos.empty()) {
+                dragonBoss.estado = EstadoDragon::Combate;
+                dragonBoss.frame = 0;
+                dragonBoss.tiempoEstado = 0.0f;
+                dragonBoss.tiempoDisparo = 1.0f;
+                mostrarMensaje("El dragon vuelve a atacar", 1.8f);
+            }
+            return;
+        }
+
+        if (dragonBoss.estado == EstadoDragon::Muriendo) {
+            proyectilesDragon.clear();
+            if (dragonBoss.tiempoEstado > 3.0f) {
+                dragonBoss.estado = EstadoDragon::Derrotado;
+                salas[SALA_I].limpiada = true;
+                mostrarMensaje("Dragon derrotado", 4.0f);
+            }
+            return;
+        }
+
+        if (dragonBoss.estado == EstadoDragon::Combate) {
+            int nuevaFase = calcularFaseDragon();
+            if (nuevaFase != dragonBoss.fase) {
+                dragonBoss.fase = nuevaFase;
+                dragonBoss.poderesCreadosFase = 0;
+                dragonBoss.tiempoPoderFase = 2.0f;
+                mostrarMensaje("Fase " + std::to_string(dragonBoss.fase), 1.8f);
+            }
+
+            // Movimiento pequeño para que se sienta vivo, sin abandonar el centro de la sala.
+            dragonBoss.posicion.x += dragonBoss.direccionMovimiento * 22.0f * dt;
+            if (dragonBoss.posicion.x > 450.0f) dragonBoss.direccionMovimiento = -1.0f;
+            if (dragonBoss.posicion.x < 350.0f) dragonBoss.direccionMovimiento = 1.0f;
+
+            dragonBoss.tiempoDisparo -= dt;
+            if (dragonBoss.tiempoDisparo <= 0.0f) {
+                int cantidad = (dragonBoss.fase == 1) ? 3 : (dragonBoss.fase == 2 ? 5 : 6);
+                bool rebota = dragonBoss.fase == 3;
+                dispararConoDragon(cantidad, rebota);
+                dragonBoss.fila = 3;
+                dragonBoss.frame = 0;
+                dragonBoss.tiempoDisparo = (dragonBoss.fase == 1) ? 2.25f : (dragonBoss.fase == 2 ? 1.75f : 1.35f);
+            }
+
+            revisarInvocacionDragon();
+            intentarPoderesBoss(dt);
+        }
+    }
+
+    void actualizarProyectilesDragon(float dt) {
+        for (auto& p : proyectilesDragon) {
+            if (p.destruido) continue;
+
+            p.posicion += p.velocidad * dt;
+            p.tiempoVida += dt;
+            p.tiempoAnimacion += dt;
+            if (p.tiempoAnimacion >= 0.08f) {
+                p.tiempoAnimacion = 0.0f;
+                p.frame = (p.frame + 1) % 6;
+            }
+
+            if (p.rebotesRestantes > 0) {
+                bool reboto = false;
+                if (p.posicion.x <= LIMITE_IZQ + p.radio || p.posicion.x >= LIMITE_DER - p.radio) {
+                    p.velocidad.x *= -1.0f;
+                    p.rebotesRestantes--;
+                    reboto = true;
+                }
+                if (!reboto && (p.posicion.y <= LIMITE_ARR + p.radio || p.posicion.y >= LIMITE_ABA - p.radio)) {
+                    p.velocidad.y *= -1.0f;
+                    p.rebotesRestantes--;
+                }
+            } else if (p.posicion.x < LIMITE_IZQ - 60.0f || p.posicion.x > LIMITE_DER + 60.0f ||
+                       p.posicion.y < LIMITE_ARR - 60.0f || p.posicion.y > LIMITE_ABA + 60.0f) {
+                p.destruido = true;
+            }
+
+            if (p.tiempoVida > 7.0f) p.destruido = true;
+        }
+
+        proyectilesDragon.erase(
+            std::remove_if(proyectilesDragon.begin(), proyectilesDragon.end(),
+                           [](const ProyectilDragon& p) { return p.destruido; }),
+            proyectilesDragon.end());
+    }
+
+    void recibirDanioDragon(ProyectilJugador& proy) {
+        if (!dragonPuedeRecibirDanio() || proy.estaDestruido()) return;
+
+        sf::Vector2f centro = dragonBoss.posicion + sf::Vector2f(0.0f, 20.0f);
+        if (colisionan(proy.getPosicion(), proy.getRadio(), centro, 92.0f)) {
+            dragonBoss.vida--;
+            proy.destruir();
+            dragonBoss.fila = 4;
+            dragonBoss.frame = 0;
+
+            if (dragonBoss.vida <= 0) {
+                dragonBoss.vida = 0;
+                dragonBoss.estado = EstadoDragon::Muriendo;
+                dragonBoss.frame = 0;
+                dragonBoss.tiempoEstado = 0.0f;
+                enemigos.clear();
+                proyectilesDragon.clear();
+                objetosSuelo.clear();
+                mostrarMensaje("El dragon cae", 3.0f);
+            }
+        }
+    }
+
+    void dibujarDragonBoss() {
+        if (salaActual != SALA_I || dragonBoss.estado == EstadoDragon::Inactivo ||
+            dragonBoss.estado == EstadoDragon::Derrotado || !hayTexturaDragonBoss) {
+            return;
+        }
+
+        sf::Sprite sprite(texturaDragonBoss);
+        sprite.setTextureRect(sf::IntRect({dragonBoss.frame * 256, dragonBoss.fila * 256}, {256, 256}));
+        sprite.setOrigin({128.0f, 128.0f});
+        sprite.setPosition(dragonBoss.posicion);
+        sprite.setScale({1.42f, 1.42f});
+        ventana.draw(sprite);
+    }
+
+    void dibujarProyectilesDragon() {
+        for (const auto& p : proyectilesDragon) {
+            if (hayTexturaFuegoDragon) {
+                sf::Sprite fuego(texturaFuegoDragon);
+                fuego.setTextureRect(sf::IntRect({p.frame * 128, 0}, {128, 128}));
+                fuego.setOrigin({64.0f, 64.0f});
+                fuego.setPosition(p.posicion);
+                float angulo = std::atan2(p.velocidad.y, p.velocidad.x) * 180.0f / 3.14159265f;
+                fuego.setRotation(sf::degrees(angulo));
+                fuego.setScale({0.42f, 0.42f});
+                ventana.draw(fuego);
+            } else {
+                sf::CircleShape bola(p.radio);
+                bola.setOrigin({p.radio, p.radio});
+                bola.setPosition(p.posicion);
+                bola.setFillColor(sf::Color(255, 95, 15));
+                bola.setOutlineThickness(3.0f);
+                bola.setOutlineColor(sf::Color(255, 220, 80));
+                ventana.draw(bola);
+            }
+        }
+    }
+
+    void dibujarBarraVidaDragon() {
+        if (salaActual != SALA_I || dragonBoss.estado == EstadoDragon::Inactivo ||
+            dragonBoss.estado == EstadoDragon::Derrotado) {
+            return;
+        }
+
+        float progreso = static_cast<float>(dragonBoss.vida) / static_cast<float>(dragonBoss.vidaMaxima);
+        if (dragonBoss.estado == EstadoDragon::Entrada) {
+            progreso = std::min(dragonBoss.tiempoEstado / 2.7f, 1.0f);
+        }
+
+        sf::RectangleShape fondo({560.0f, 22.0f});
+        fondo.setPosition({120.0f, 18.0f});
+        fondo.setFillColor(sf::Color(25, 10, 15, 230));
+        fondo.setOutlineThickness(3.0f);
+        fondo.setOutlineColor(sf::Color(210, 170, 55));
+        ventana.draw(fondo);
+
+        sf::RectangleShape vida({560.0f * progreso, 22.0f});
+        vida.setPosition({120.0f, 18.0f});
+        vida.setFillColor(sf::Color(170, 35, 70, 240));
+        ventana.draw(vida);
+
+        for (int i = 1; i < 3; i++) {
+            sf::RectangleShape corte({4.0f, 28.0f});
+            corte.setPosition({120.0f + 560.0f * static_cast<float>(i) / 3.0f - 2.0f, 15.0f});
+            corte.setFillColor(sf::Color(245, 210, 100));
+            ventana.draw(corte);
+        }
+
+        if (hayFuenteHUD) {
+            sf::Text nombre(fuenteHUD, "DRAGON DEL EDIFICIO", 18);
+            nombre.setFillColor(sf::Color(255, 235, 150));
+            nombre.setOutlineColor(sf::Color::Black);
+            nombre.setOutlineThickness(2.0f);
+            auto b = nombre.getLocalBounds();
+            nombre.setOrigin({b.size.x / 2.0f, 0.0f});
+            nombre.setPosition({400.0f, 45.0f});
+            ventana.draw(nombre);
         }
     }
 
@@ -1748,7 +2198,9 @@ private:
         lagrimasEnemigas.clear();
         proyectilesRaptor.clear();
         proyectilesSpreadshot.clear();
+        proyectilesDragon.clear();
         enemigos.clear();
+        reiniciarDragonBoss();
 
         salaActual = SALA_A;
         puertaSecretaDesbloqueada = false;
@@ -1782,8 +2234,14 @@ private:
         }
 
         actualizarBuffs(dt);
-        isaac->actualizar(dt);
-        manejarDisparos();
+
+        bool jugadorBloqueadoPorBoss =
+            (salaActual == SALA_I && dragonBoss.estado == EstadoDragon::Entrada);
+
+        if (!jugadorBloqueadoPorBoss) {
+            isaac->actualizar(dt);
+            manejarDisparos();
+        }
 
         for (auto& enemigo : enemigos) {
             enemigo->setObjetivo(isaac->getCentroHitbox());
@@ -1791,6 +2249,7 @@ private:
         }
 
         manejarDisparosEnemigos();
+        actualizarDragonBoss(dt);
 
         for (size_t i = 0; i < proyectilesJugador.size(); ) {
             proyectilesJugador[i].actualizar(dt);
@@ -1820,6 +2279,7 @@ private:
             else i++;
         }
 
+        actualizarProyectilesDragon(dt);
         manejarColisiones();
 
         for (size_t i = 0; i < enemigos.size(); ) {
@@ -1838,7 +2298,7 @@ private:
             }
         }
 
-        if (enemigos.empty() && !salas[salaActual].limpiada) {
+        if (salaActual != SALA_I && enemigos.empty() && !salas[salaActual].limpiada) {
             salas[salaActual].limpiada = true;
 
             if (salaActual == SALA_E && !puertaSecretaDesbloqueada) {
@@ -1857,7 +2317,10 @@ private:
 
         actualizarLlave();
         actualizarObjetosSuelo();
-        intentarCambioSala();
+
+        if (!jugadorBloqueadoPorBoss && dragonBoss.estado != EstadoDragon::Muriendo) {
+            intentarCambioSala();
+        }
 
         if (!isaac->estaVivo()) {
             reproducirSonido(bufferPlayerDeath, hayPlayerDeath, 65.0f);
@@ -1870,6 +2333,7 @@ private:
         ventana.clear(sf::Color(0, 0, 0));
         dibujarFondoSala();
         dibujarPuertasDisponibles();
+        dibujarDragonBoss();
 
         if (isaac) isaac->dibujar(ventana);
         for (auto& enemigo : enemigos) enemigo->dibujar(ventana);
@@ -1877,11 +2341,13 @@ private:
         for (auto& lagrima : lagrimasEnemigas) lagrima.dibujar(ventana);
         for (auto& proy : proyectilesRaptor) proy->dibujar(ventana);
         for (auto& proy : proyectilesSpreadshot) proy->dibujar(ventana);
+        dibujarProyectilesDragon();
 
         dibujarObjetosSuelo();
         dibujarLlave();
         dibujarHUD();
         dibujarIndicadorLlaveHUD();
+        dibujarBarraVidaDragon();
         dibujarMiniMapa();
     }
 
@@ -1983,6 +2449,7 @@ private:
         ventana.clear(sf::Color(0, 0, 0));
         dibujarFondoSala();
         dibujarPuertasDisponibles();
+        dibujarDragonBoss();
 
         isaac->dibujar(ventana);
         for (auto& enemigo : enemigos) enemigo->dibujar(ventana);
@@ -1990,6 +2457,7 @@ private:
         for (auto& lagrima : lagrimasEnemigas) lagrima.dibujar(ventana);
         for (auto& proy : proyectilesRaptor) proy->dibujar(ventana);
         for (auto& proy : proyectilesSpreadshot) proy->dibujar(ventana);
+        dibujarProyectilesDragon();
 
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::H)) {
             isaac->dibujarHitbox(ventana);
@@ -2009,12 +2477,20 @@ private:
             for (auto& proy : proyectilesSpreadshot) {
                 dibujarCirculoDebug(proy->getPosicion(), proy->getRadio(), sf::Color::Green);
             }
+
+            if (dragonActivo()) {
+                dibujarCirculoDebug(dragonBoss.posicion + sf::Vector2f(0.0f, 20.0f), 92.0f, sf::Color(255, 120, 0));
+            }
+            for (auto& proy : proyectilesDragon) {
+                dibujarCirculoDebug(proy.posicion, proy.radio, sf::Color(255, 110, 20));
+            }
         }
 
         dibujarObjetosSuelo();
         dibujarLlave();
         dibujarHUD();
         dibujarIndicadorLlaveHUD();
+        dibujarBarraVidaDragon();
         dibujarMiniMapa();
         dibujarMensajePantalla();
         ventana.display();
@@ -2048,6 +2524,8 @@ public:
           hayTexturaObjetoCorazon(false),
           hayTexturaObjetoEstrella(false),
           hayTexturaObjetoRayo(false),
+          hayTexturaDragonBoss(false),
+          hayTexturaFuegoDragon(false),
           salaActual(SALA_A),
           bloqueoCambioSala(false),
           puertaSecretaDesbloqueada(false),
@@ -2093,6 +2571,13 @@ public:
         );
         hayTexturaObjetoRayo = texturaObjetoRayo.loadFromFile(
             "assets/images/items/item_lightning.png"
+        );
+
+        hayTexturaDragonBoss = texturaDragonBoss.loadFromFile(
+            "assets/images/boss/dragon_sheet.png"
+        );
+        hayTexturaFuegoDragon = texturaFuegoDragon.loadFromFile(
+            "assets/images/boss/dragon_fire_sheet.png"
         );
 
         configurarSalas();

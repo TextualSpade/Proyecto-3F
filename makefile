@@ -11,7 +11,7 @@ EXE_FILES := $(BIN_DIR)/main.exe
 all: $(EXE_FILES)
 
 $(BIN_DIR)/main.exe: $(CPP_FILES)
-	g++ $(CXXFLAGS) -mconsole $(CPP_FILES) -o $@ $(SFML)
+	g++ $(CXXFLAGS) -mwindows $(CPP_FILES) -o $@ $(SFML)
 
 clean:
 	rm -f $(BIN_DIR)/*.exe
