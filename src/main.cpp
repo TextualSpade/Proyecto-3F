@@ -73,7 +73,8 @@ struct DatosSala {
 enum class TipoObjeto {
     Corazon,
     Estrella,
-    Rayo
+    Rayo,
+    CocaColaLegendaria
 };
 
 struct ObjetoSuelo {
@@ -258,11 +259,13 @@ private:
     sf::Texture texturaObjetoCorazon;
     sf::Texture texturaObjetoEstrella;
     sf::Texture texturaObjetoRayo;
+    sf::Texture texturaObjetoCocaCola;
     bool hayTexturaCorazon;
     bool hayTexturaLlave;
     bool hayTexturaObjetoCorazon;
     bool hayTexturaObjetoEstrella;
     bool hayTexturaObjetoRayo;
+    bool hayTexturaObjetoCocaCola;
     sf::Texture texturaDragonBoss;
     sf::Texture texturaFuegoDragon;
     bool hayTexturaDragonBoss;
@@ -290,6 +293,9 @@ private:
     bool puertaSecretaDesbloqueada;
     bool llaveDisponible;
     bool llaveObtenida;
+    bool cocacolaSoltada;
+    bool cocacolaObtenida;
+    float tiempoEfectoCocaCola;
     sf::Vector2f posicionLlave;
     std::string mensajePantalla;
     float tiempoMensaje;
@@ -1043,6 +1049,8 @@ private:
                 return hayTexturaObjetoEstrella ? &texturaObjetoEstrella : nullptr;
             case TipoObjeto::Rayo:
                 return hayTexturaObjetoRayo ? &texturaObjetoRayo : nullptr;
+            case TipoObjeto::CocaColaLegendaria:
+                return hayTexturaObjetoCocaCola ? &texturaObjetoCocaCola : nullptr;
         }
         return nullptr;
     }
@@ -1068,6 +1076,13 @@ private:
                 tiempoEstrella += 15.0f;
                 reproducirSonido(bufferPowerStar, hayPowerStar, 65.0f);
                 mostrarMensaje("Disparo triple activado", 2.2f);
+                break;
+
+            case TipoObjeto::CocaColaLegendaria:
+                cocacolaObtenida = true;
+                tiempoEfectoCocaCola = 5.0f;
+                reproducirSonido(bufferPowerKey, hayPowerKey, 75.0f);
+                mostrarMensaje("Has conseguido la legendaria botella de Coca-Cola", 5.0f);
                 break;
         }
     }
@@ -1523,6 +1538,22 @@ private:
         }
     }
 
+
+
+    void soltarCocaColaLegendaria() {
+        if (cocacolaSoltada) {
+            return;
+        }
+
+        sf::Vector2f posicionDrop = dragonBoss.posicion + sf::Vector2f(0.0f, 80.0f);
+        if (posicionDrop.y > 500.0f) posicionDrop.y = 500.0f;
+        if (posicionDrop.y < 120.0f) posicionDrop.y = 300.0f;
+
+        objetosSuelo.push_back({TipoObjeto::CocaColaLegendaria, posicionDrop});
+        cocacolaSoltada = true;
+        mostrarMensaje("El dragon solto algo legendario", 3.0f);
+    }
+
     void dispararConoDragon(int cantidad, bool rebota) {
         sf::Vector2f origen = dragonBoss.posicion + sf::Vector2f(0.0f, 45.0f);
         sf::Vector2f objetivo = isaac ? isaac->getCentroHitbox() : sf::Vector2f{400.0f, 500.0f};
@@ -1622,7 +1653,7 @@ private:
             if (dragonBoss.tiempoEstado > 3.0f) {
                 dragonBoss.estado = EstadoDragon::Derrotado;
                 salas[SALA_I].limpiada = true;
-                mostrarMensaje("Dragon derrotado", 4.0f);
+                soltarCocaColaLegendaria();
             }
             return;
         }
@@ -2057,6 +2088,9 @@ private:
             case TipoObjeto::Rayo:
                 forma.setFillColor(sf::Color(255, 245, 70));
                 break;
+            case TipoObjeto::CocaColaLegendaria:
+                forma.setFillColor(sf::Color(190, 25, 25));
+                break;
         }
 
         forma.setOutlineThickness(2.0f);
@@ -2074,7 +2108,7 @@ private:
                                   static_cast<float>(tam.y) / 2.0f});
                 sprite.setPosition(objeto.posicion);
 
-                float maximo = 34.0f;
+                float maximo = (objeto.tipo == TipoObjeto::CocaColaLegendaria) ? 48.0f : 34.0f;
                 float escala = maximo / static_cast<float>(std::max(tam.x, tam.y));
                 sprite.setScale({escala, escala});
                 ventana.draw(sprite);
@@ -2200,12 +2234,16 @@ private:
         proyectilesSpreadshot.clear();
         proyectilesDragon.clear();
         enemigos.clear();
+        objetosSuelo.clear();
         reiniciarDragonBoss();
 
         salaActual = SALA_A;
         puertaSecretaDesbloqueada = false;
         llaveDisponible = false;
         llaveObtenida = false;
+        cocacolaSoltada = false;
+        cocacolaObtenida = false;
+        tiempoEfectoCocaCola = 0.0f;
         stacksVelocidad = 0;
         stacksEstrella = 0;
         tiempoVelocidad = 0.0f;
@@ -2231,6 +2269,13 @@ private:
     void actualizar(float dt) {
         if (tiempoMensaje > 0.0f) {
             tiempoMensaje -= dt;
+        }
+
+        if (tiempoEfectoCocaCola > 0.0f) {
+            tiempoEfectoCocaCola -= dt;
+            if (tiempoEfectoCocaCola < 0.0f) {
+                tiempoEfectoCocaCola = 0.0f;
+            }
         }
 
         actualizarBuffs(dt);
@@ -2444,6 +2489,50 @@ private:
         reloj.restart();
     }
 
+
+
+    void dibujarEfectoCocaCola() {
+        if (tiempoEfectoCocaCola <= 0.0f || !isaac) {
+            return;
+        }
+
+        float progreso = tiempoEfectoCocaCola / 5.0f;
+        if (progreso < 0.0f) progreso = 0.0f;
+        if (progreso > 1.0f) progreso = 1.0f;
+
+        sf::Vector2f centro = isaac->getCentroHitbox();
+        float pulso = (std::sin(tiempoEfectoCocaCola * 10.0f) + 1.0f) * 0.5f;
+
+        sf::CircleShape auraRoja(70.0f + 18.0f * pulso);
+        auraRoja.setOrigin({auraRoja.getRadius(), auraRoja.getRadius()});
+        auraRoja.setPosition(centro);
+        auraRoja.setFillColor(sf::Color(0, 0, 0, 0));
+        auraRoja.setOutlineThickness(6.0f);
+        auraRoja.setOutlineColor(sf::Color(230, 35, 35, static_cast<std::uint8_t>(210.0f * progreso)));
+        ventana.draw(auraRoja);
+
+        sf::CircleShape auraDorada(42.0f + 10.0f * (1.0f - pulso));
+        auraDorada.setOrigin({auraDorada.getRadius(), auraDorada.getRadius()});
+        auraDorada.setPosition(centro);
+        auraDorada.setFillColor(sf::Color(0, 0, 0, 0));
+        auraDorada.setOutlineThickness(4.0f);
+        auraDorada.setOutlineColor(sf::Color(255, 230, 90, static_cast<std::uint8_t>(190.0f * progreso)));
+        ventana.draw(auraDorada);
+
+        for (int i = 0; i < 10; i++) {
+            float angulo = static_cast<float>(i) * 0.62831853f + tiempoEfectoCocaCola * 2.5f;
+            float radio = 95.0f + 18.0f * std::sin(tiempoEfectoCocaCola * 3.0f + i);
+            sf::CircleShape chispa(3.0f);
+            chispa.setOrigin({3.0f, 3.0f});
+            chispa.setPosition({centro.x + std::cos(angulo) * radio,
+                                centro.y + std::sin(angulo) * radio});
+            chispa.setFillColor((i % 2 == 0)
+                ? sf::Color(255, 70, 70, static_cast<std::uint8_t>(220.0f * progreso))
+                : sf::Color(255, 240, 120, static_cast<std::uint8_t>(220.0f * progreso)));
+            ventana.draw(chispa);
+        }
+    }
+
     void renderizar() {
         ventana.setView(crearVistaLetterbox(ventana));
         ventana.clear(sf::Color(0, 0, 0));
@@ -2492,13 +2581,14 @@ private:
         dibujarIndicadorLlaveHUD();
         dibujarBarraVidaDragon();
         dibujarMiniMapa();
+        dibujarEfectoCocaCola();
         dibujarMensajePantalla();
         ventana.display();
     }
 
 public:
     Juego()
-        : ventana(sf::VideoMode::getDesktopMode(), "Aventuras en el Edificio de Software", sf::State::Fullscreen),
+        : ventana(sf::VideoMode::getDesktopMode(), "Aventuras en el Edificio de Software", sf::Style::None),
           hayTexturaPortada(false),
           hayTexturaMenuPrincipal(false),
           pistaFondoActual(""),
@@ -2524,6 +2614,7 @@ public:
           hayTexturaObjetoCorazon(false),
           hayTexturaObjetoEstrella(false),
           hayTexturaObjetoRayo(false),
+          hayTexturaObjetoCocaCola(false),
           hayTexturaDragonBoss(false),
           hayTexturaFuegoDragon(false),
           salaActual(SALA_A),
@@ -2531,6 +2622,9 @@ public:
           puertaSecretaDesbloqueada(false),
           llaveDisponible(false),
           llaveObtenida(false),
+          cocacolaSoltada(false),
+          cocacolaObtenida(false),
+          tiempoEfectoCocaCola(0.0f),
           posicionLlave(400.0f, 300.0f),
           stacksVelocidad(0),
           stacksEstrella(0),
@@ -2571,6 +2665,9 @@ public:
         );
         hayTexturaObjetoRayo = texturaObjetoRayo.loadFromFile(
             "assets/images/items/item_lightning.png"
+        );
+        hayTexturaObjetoCocaCola = texturaObjetoCocaCola.loadFromFile(
+            "assets/images/items/item_cocacola.png"
         );
 
         hayTexturaDragonBoss = texturaDragonBoss.loadFromFile(
