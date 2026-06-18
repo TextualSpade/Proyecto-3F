@@ -25,20 +25,25 @@ jobs:
 
       - name: 📦 Empaquetar ejecutable
         run: |
+          echo "Empaquetando bin/ y assets/ en un ZIP..."
           mkdir -p release-package
 
+          # Copiar ejecutable
           if [ -d "bin" ]; then
-            cp -r bin/* release-package/ 2>/dev/null || echo "⚠️ bin/ vacía"
+            cp -r bin/* release-package/ 2>/dev/null || echo "⚠️ Carpeta bin/ vacía o no existe"
           fi
 
+          # Copiar assets
           if [ -d "assets" ]; then
-            cp -r assets release-package/ 2>/dev/null || echo "⚠️ assets/ vacía"
+            cp -r assets release-package/ 2>/dev/null || echo "⚠️ Carpeta assets/ vacía o no existe"
           fi
 
+          # Crear ZIP
           cd release-package
-          zip -r ../juego-proyecto-252.zip .
+          zip -r ../juego-proyecto-252.zip . || echo "⚠️ Error al crear ZIP"
           cd ..
 
+          # Mostrar tamaño
           SIZE=$(du -h juego-proyecto-252.zip | cut -f1)
           echo "✅ ZIP creado: $SIZE"
 
@@ -73,8 +78,11 @@ jobs:
 
       - name: 📡 Notificar a CETUS
         run: |
+          echo "🔔 Enviando notificación a CETUS..."
+
           RELEASE_URL="${{ steps.create_release.outputs.url }}"
 
+          # Construir payload JSON
           cat > payload.json <<EOF
           {
             "action": "published",
@@ -97,18 +105,20 @@ jobs:
           }
           EOF
 
+          # Enviar webhook a CETUS (sin autenticación para simplicidad)
           curl -X POST https://cetus.logiasimbolica.com/api/webhook/github \
             -H "Content-Type: application/json" \
             -H "X-GitHub-Event: release" \
             -d @payload.json \
             -w "\n📊 Status: %{http_code}\n" \
-            || echo "⚠️ Error al notificar a CETUS"
+            || echo "⚠️ Error al notificar a CETUS (el proyecto aún se puede ver en GitHub Releases)"
 
           echo "✅ Proceso completado"
 
       - name: 📋 Resumen
         run: |
           echo "## 🎉 Publicación Exitosa" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Versión:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Release:** [Ver en GitHub](${{ steps.create_release.outputs.url }})" >> $GITHUB_STEP_SUMMARY
