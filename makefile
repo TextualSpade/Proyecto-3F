@@ -14,6 +14,6 @@ $(BIN_DIR)/main.exe: $(CPP_FILES)
 	g++ $(CXXFLAGS) -mwindows $(CPP_FILES) -o $@ $(SFML)
 
 clean:
-	rm -f $(BIN_DIR)/*.exe
+	rm -f $(BIN_DIR)/main.exe
 
 .PHONY: all clean
