@@ -37,6 +37,7 @@ class Jugador {
   +getCentroHitbox()
   +getCentroDisparo()
 }
+Alumno --|> Jugador
 
 abstract class Enemigo {
   #posicion: sf::Vector2f
@@ -152,13 +153,13 @@ enum TipoObjeto {
   Rayo
 }
 
-' Herencia: relación ES
+
 Blob --|> Enemigo
 Raptor --|> Enemigo
 Rusher --|> Enemigo
 Spreadshot --|> Enemigo
 
-' Composición / agregación: relación TIENE
+
 Juego *-- "1" Jugador
 Juego o-- "0..*" Enemigo
 Juego o-- "0..*" ProyectilJugador
@@ -175,10 +176,10 @@ Rusher *-- "1" Animacion
 Spreadshot *-- "1" Animacion
 ProyectilRaptor *-- "1" Animacion
 ProyectilSpreadshot *-- "1" Animacion
-ObjetoSuelo --> TipoObjeto
+ObjetoSuelo --|> TipoObjeto
 
-' Uso: relación USA dentro de la lógica de juego
-Juego --> TipoObjeto
-Juego --> Animacion
+
+Juego --|> TipoObjeto
+Juego --|> Animacion
 
 @enduml
